@@ -1,0 +1,221 @@
+---
+title: "Milestone #6"
+author: "Garrett Rolph"
+date: "March 6, 2020"
+output: html_document
+---
+
+## Background
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(ggplot2)
+library(haven)
+library(googlesheets4)
+library(googlesheets)
+library(pdftools)
+```
+The purpose of this project is to analyze the differences in educational outcome between students in different educational circumstances across the country. I plan to include data from as many of the 50 states as I can access, though some states are much more restrictive than others. Below, I have selected some data that was readily available to me on the Massachusetts Department of Education Website. Included is data detailing SAT performance by school district, per pupil expenditures by school district, and staff demographics by school district. 
+```{r Massachusetts, include = FALSE}
+MA_SAT_18_19 <- read_excel("sat_performance.xlsx", 
+                        col_types = c("text", "numeric",
+                                      "numeric", "numeric",
+                                      "logical", "numeric"),
+                        skip = 1) %>% 
+  clean_names() %>% 
+  mutate(avg_reading = 
+          mean(reading_writing, na.rm = TRUE),
+         avg_math =
+           mean(math, na.rm = TRUE)) 
+
+MA_PPE_18 <- read_excel("PerPupilExpenditures.xlsx",
+                        col_types = c("text", "numeric",
+                                      "numeric", "text",
+                                      "text", "text",
+                                      "text", "text",
+                                      "logical"),
+                        skip = 1) %>% 
+  clean_names() %>% 
+  select(-x9)
+
+mass_staff_demographics <- read_excel("staffracegender.xlsx",
+                                      skip = 1)
+
+mass_salaries <- read_excel("TeacherSalaries.xlsx")
+
+mass_joined <- MA_SAT_18_19 %>% 
+  full_join(MA_PPE_18, by = c("district_name" = "district_name",
+                              "district_code" = "district_code"))
+```
+
+
+I then joined the SAT scores data with the per pupil expenditure data, which will allow me to sort by level of expenditure per student and draw conclusions from the district's average SAT score. The SAT scores data includes another breakdown; one for science/math scores and one for reading/writing.
+
+I plan to draw conclusions across the different sets of data across all of the states, and look at how differences in demographic composition, per pupil expenditure, school district salary, and district salary influence outcomes as measured by ACT/SAT score and college admission statistics. 
+
+What I have done this week is identified two more states to pursue data from and looked it up and read it in. Admittedly, I picked a quite nice state to begin with when I chose Massachusetts because much of its data is nicely formatted and easily accessible, so I found a bit more of a struggle here using Florida and Georgia since I had to do more hunting around on different websites to find everything I needed. In the end, I was able to find current data on the SAT and ACT scores for Georgia, as well as an excel sheet on the demographics of schools which I think will be interesting to explore. 
+
+```{r Georgia, include = FALSE}
+ga_SAT <- read_excel("School Level SAT.xlsx", skip = 3,
+                     col_types = c("numeric", "text",
+                                      "numeric", "numeric",
+                                      "numeric", "numeric")) %>% 
+  rename(math = "Math Mean") 
+  
+ga_SAT <- data.frame(lapply(ga_SAT, function(x) {
+                gsub('\\*', NA_character_, x)
+             })) 
+
+ga_SAT <- na.omit(ga_SAT) %>% 
+  mutate(avg_math = mean(math)) 
+  
+
+ga_ACT <- read_excel("ACT Scores School 2019.xlsx") %>% 
+  clean_names()
+
+ga_ACT <- data.frame(lapply(ga_ACT, function(x) {
+                gsub('\\*', NA_character_, x)
+             })) %>% 
+  na.omit(ga_ACT) %>% 
+  mutate(composite = mean(average_composite_score, na.rm = TRUE)) %>% 
+  View()
+
+ga_demographics <- read_csv("FTE Enrollment by Race_Ethnicity and Gender Fiscal Year2020-1 Data Report.csv", skip = 3)
+```
+
+I was also able to find data from Florida that included ACT scores by district as well as teacher salaries in addition to salaries from each of the 75 districts in Florida. For next week, I plan to do much the same but hopefully I can have this work done for 5 states since if I only worked with 2 states per week I wouldn't have all 50 done by the time Demo Days comes around. 
+
+```{r Florida, include = FALSE}
+FL_ACT <- read_excel("2017ACTSchool.xlsx", skip = 3) %>% 
+  clean_names() %>% 
+  rename(district_number = "x1",
+         district_name = "x2",
+         school_code = "x3",
+         school_name = "x4",
+         student_count = "x5")
+
+FL_ACT <- data.frame(lapply(FL_ACT, function(x) {
+                gsub('\\*', NA_character_, x)
+             }))
+
+FL_ACT %>% 
+  mutate(average = mean(composite)) 
+
+FL_teachersalaries <- read_excel("1819TeacherSalaryData.xlsx", skip = 2) %>% 
+  clean_names()
+FL_districtsalaries <- read_excel("1819FLDistStSalaries.xlsx", skip = 2) %>% 
+  clean_names()
+```
+
+```{r Alabama, include = FALSE}
+AL_grades <- read_excel("2018-2019 Report Card Profile.xlsx", skip = 4) %>% 
+  clean_names()
+
+## Not sure if I'm gonna be able to find data for demographics or school
+## spending for Alabama, but I can keep looking at least for a little while
+## longer
+```
+
+Here I have also included South Carolina, as well as a little bit of data on Alabama's education systems. 
+
+```{r South Carolina, include = FALSE}
+SC_ACT <- read_excel("SAT2019_Schoolsfinal.xlsx", skip = 2) %>% 
+  clean_names()
+SC_SAT <- read_excel("ACT-Schools2019.xlsx", skip = 1) %>% 
+  clean_names()
+
+## The SC_expenditures needs to be fixed, and I think I'd like to pivot the
+## columns and rows around. I don't know what has to be done exactly, but they
+## have 100 school districts in each column and I would definitely get more
+## utility out of having them in rows instead so I could join on the rows.
+
+SC_expenditures <- read_excel("Expenditure FY 2017-2018.xlsx")%>% 
+  clean_names()
+SC_teacher_demos <- read_excel("SOUTH CAROLINA TEACHERS BY RACE AND GENDER 2015-16.xlsx")  %>% 
+  clean_names()
+```
+
+Below, I have included data from California as well as from Colorado. I was able to obtain extensive data from Colorado, so I played around with it a little bit in the graphs below. Obviously, these graphs aren't very visually useful at this point, but I spent a lot of time trying to find the data in the first place and was not able to dedicate as much time to the graphs themselves. Again though, these won't be the final graphs by any stretch of the imagination so I will keep working on them throughout the week and do more work on finding data from other states as well.
+
+```{r}
+CA_data <- read_excel("pubschls.xlsx", skip = 5) %>% 
+  clean_names()
+```
+
+```{r Colorado, message = FALSE}
+CO_SAT <- read_excel("States/Colorado/2019 PSAT and SAT Disaggregated District and School Achievement Results.xlsx", skip = 10) %>% 
+  clean_names()
+
+CO_agg_SAT <- read_excel("States/Colorado/2019 PSAT SAT District and School Achievement Results.xlsx", skip = 10) %>% 
+  clean_names()
+
+CO_principal_sals <- read_excel("States/Colorado/2018-19 Average Principal and Asst Principal Salary by District.xlsx", skip = 3) %>% 
+  clean_names() 
+
+CO_supt_sals <- read_excel("States/Colorado/2018-19 Average Superintendent Salary by District.xlsx", skip = 3) %>% 
+  clean_names()
+
+CO_teacher_sals <- read_excel("States/Colorado/2018-19 Average Teacher Salary by District.xlsx", skip = 3) %>% 
+  clean_names() %>% 
+  rename("average_salary" = "x4",
+         "district_name" = "orgnazation_name")
+
+CO_turnover <- read_excel("States/Colorado/2018-19 Personnel Turnover Rate by District and Position Categories.xlsx", skip = 3) %>% 
+  clean_names()
+
+CO_ratios <- read_excel("States/Colorado/2018-19 Student Teacher Ratios.xlsx", skip = 2) %>% 
+  clean_names() 
+
+CO_teacher_demos <- read_excel("States/Colorado/2018-19 Teachers by District, Race and Gender.xlsx", skip = 3) %>% 
+  clean_names() 
+```
+
+```{r CO score vs. teacher salary}
+  CO_SAT_sals <- inner_join(CO_SAT, CO_teacher_sals, 
+                            by = c("district_name" = "district_name")) %>% 
+  rename("average_total_salary" = "x8") %>% 
+  filter(!number_of_valid_scores == "< 16")
+```
+
+```{r}
+CO_SAT_sals %>%
+  group_by(gender, school_name) %>% 
+  filter(test == "SAT") %>% 
+  arrange(desc(mathematics_mean_score)) %>% 
+  head(20) %>% 
+  ggplot(aes(school_name, mathematics_mean_score, color = gender)) + geom_col() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  expand_limits(y = -1)
+```
+
+```{r}
+CO_gendered_outcomes <- CO_SAT_sals %>%
+  group_by(gender) %>% 
+  filter(test == "SAT") %>% 
+  arrange(desc(mathematics_mean_score)) %>% 
+  head(40) %>%    
+    mutate(school_name = factor(school_name, levels = c(
+    "LIBERTY COMMON CHARTER SCHOOL", "D'EVELYN JUNIOR/SENIOR HIGH SCHOOL", "DSST: BYERS HIGH SCHOOL", "THOMAS MACLAREN STATE CHARTER SCHOOL", "FAIRVIEW HIGH SCHOOL", "THE VANGUARD SCHOOL (HIGH)", "PEAK TO PEAK CHARTER SCHOOL", "STARGATE CHARTER SCHOOL","CHERRY CREEK HIGH SCHOOL", "PROSPECT RIDGE ACADEMY",  "STEM SCHOOL HIGHLANDS RANCH", "DSST: STAPLETON HIGH SCHOOL", "JEFFERSON ACADEMY HIGH SCHOOL",  "TCA COLLEGE PATHWAYS","SKYVIEW ACADEMY","MONARCH HIGH SCHOOL","FOSSIL RIDGE HIGH SCHOOL","COLORADO EARLY COLLEGES - PARKER","ROCK CANYON HIGH SCHOOL", "EVERGREEN HIGH SCHOOL","All Schools","DENVER SCHOOL OF THE ARTS","THE CLASSICAL ACADEMY HIGH SCHOOL", "PALMER RIDGE HIGH SCHOOL", "CHEYENNE MOUNTAIN HIGH SCHOOL","CRESTED BUTTE SECONDARY SCHOOL"))) %>% 
+  ggplot(aes(school_name, mathematics_mean_score, fill = gender)) + geom_col(stat = 'identity',
+                                                              position = 'dodge') +
+  coord_flip() +
+  theme_classic() +
+  labs(title = "Average Scores by Gender",
+       subtitle = "Of the top 20 Schools in Colorado",
+       y = "Average Math Score",
+       x = "School Name") +
+    theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
+            scale_fill_discrete(name = "Gender")
+
+CO_gendered_outcomes
+```
+
+```{r}
+CO_gendered_outcomes %>% 
+ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
+```
+
+URL for my Shiny app: https://garrett-rolph.shinyapps.io/final-proj-shiny/
