@@ -105,38 +105,28 @@ CO_gendered_outcomes <- CO_SAT_sals %>%
             scale_fill_discrete(name = "Gender")
 
 CO_gendered_outcomes
-```
 
-```{r}
 CO_gendered_outcomes %>% 
 ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
 ```
 
 ```{r Connecticut, message = FALSE}
-CN_expenditures <- read_sheet("https://docs.google.com/spreadsheets/d/12Hy7Wqal4eh8iaDBaxkWGonB1qiG6rbp0ClFstD4QZw/edit#gid=0", skip = 1) %>% clean_names()
+CN_expenditures <- read_excel("States/Connecticut/CN_financial.xlsx", skip = 1) %>% 
+  clean_names()
 
 CN_expenditures <- CN_expenditures[ ,-c(3:6)]
-```
 
-```{r}
-CN_teacher_demos <- read_sheet("https://docs.google.com/spreadsheets/d/1hqd_BlUnN_iimltVFJhQqzvUJ58vcGnv8rdpZcdbZ40/edit#gid=0", skip = 1) %>% clean_names() 
+CN_teacher_demos <- read_excel("States/Connecticut/CN teacher demos.xlsx", skip = 1) %>% clean_names() 
 
 CN_teacher_demos <- CN_teacher_demos[ ,-c(3:10)]
-```
 
-```{r}
-
-CN_SAT <- read_sheet("https://docs.google.com/spreadsheets/d/1eEr8Vs80NQBzHORBG7n1kiQEAxMjnu0jdlY-AuJ9UUs/edit#gid=0", skip = 2) %>% clean_names()
+CN_SAT <- read_excel("States/Connecticut/CN SAT.xlsx", skip = 2) %>% clean_names()
 
 CN_SAT <- CN_SAT[ , -c(3:11)]
-```
 
-```{r Connecticut joining}
 CN_join1 <- CN_expenditures %>% 
   full_join(CN_teacher_demos, by = c("district" = "district"))
 ```
-
-
 
 ```{r Florida, include = FALSE}
 FL_ACT <- read_excel("States/Florida/2017ACTSchool.xlsx", skip = 3) %>% 
@@ -158,14 +148,25 @@ FL_teachersalaries <- read_excel("States/Florida/1819TeacherSalaryData.xlsx", sk
   clean_names()
 FL_districtsalaries <- read_excel("States/Florida/1819FLDistStSalaries.xlsx", skip = 2) %>% 
   clean_names()
-```
 
-```{r Florida joined}
 FL_join1 <- FL_ACT %>% 
   full_join(FL_teachersalaries, by = "district_name")
 
 FL_joined <- FL_join1 %>% 
-  full_join(FL_districtsalaries, by = "district_name")
+  full_join(FL_districtsalaries, by = "district_name") %>% 
+  select(-average) %>% 
+  na.omit() 
+
+FL_joined %>% 
+  group_by(district_name) %>% 
+  arrange(desc(composite)) %>% 
+  ggplot(aes(x = (as.numeric(as.character(composite))), y = average_salary)) + 
+  geom_point(position = 'dodge') + theme_classic() + 
+  geom_smooth(method = lm, color = 'dark red') +
+  labs(title = "Correlation Between ACT Score and Teacher Salary",
+       subtitle = "Where salary is average district salary and score is composite ACT score",
+       y = "Salary (USD)",
+       x = "Score")
 ```
 
 ```{r Georgia, include = FALSE}
@@ -198,9 +199,7 @@ ga_ACT <- data.frame(lapply(ga_ACT, function(x) {
 
 
 ga_demographics <- read_csv("States/Georgia/FTE Enrollment by Race_Ethnicity and Gender Fiscal Year2020-1 Data Report.csv", skip = 3)
-```
 
-```{r Georgia joined}
 GA_join1 <- ga_SAT %>% 
   full_join(ga_ACT, by = c("school_name" = "hs_name")) 
 ```
@@ -224,9 +223,7 @@ IN_ACT <- read_excel("States/Indiana/act-corporation-and-school.xlsx",
 IN_financial <- read_excel("States/Indiana/fy2019-school-level-financial-data-media.xlsx") %>% 
   clean_names() %>% 
   filter(str_detect(school_type, "High School")) 
-```
 
-```{r Indiana joined}
 IN_join1 <- IN_SAT %>% 
   full_join(IN_ACT, by = "corp_name")
 
@@ -261,9 +258,7 @@ select(1,2,34,36) %>%
   rename("school_name" = x2,
         "2018-2019" = "x2018_2019",
          "2019-2020" = "x2019_2020")
-```
 
-```{r Kentucky joined}
 KY_join1 <- KY_ACT %>% 
   right_join(KY_teacher_salaries, by = c("dist_number" = "dist_no")) 
 
@@ -283,9 +278,7 @@ LA_teacher_salaries <- LA_teacher_salaries[-c(1,3), ]
 
 LA_ACT <- read_excel("States/Louisiana/act-scores-class-of-2019.xlsx", skip = 4) %>% 
   clean_names()
-```
 
-```{r}
 LA_joined <- LA_ACT %>% 
   full_join(LA_teacher_salaries, by = c("district" = "lea_name"))
 ```
@@ -323,17 +316,15 @@ MA_join1 <- MA_SAT_18_19 %>%
 ```
 
 ```{r Nevada}
-NV_outcomes <- read_sheet("https://docs.google.com/spreadsheets/d/1Zl3vlRZG0OM_XKch9YbWYjnSTtiWcSPYjyePHA4wls4/edit#gid=0") %>% clean_names() %>% 
+NV_outcomes <- read_excel("States/Nevada/Nevada Outcomes.xlsx") %>% clean_names() %>% 
   rename(district_name = group) 
 
-NV_demographics <- read_sheet("https://docs.google.com/spreadsheets/d/1J18F48EbJZtMVVfBJ8WyT4PV1Cjjqz2bHoFfyGxUbQ8/edit#gid=0") %>% clean_names() %>% 
+NV_demographics <- read_excel("States/Nevada/Nevada Demos.xlsx") %>% clean_names() %>% 
   rename(district_name = name) 
 
-NV_financial <- read_sheet("https://docs.google.com/spreadsheets/d/1oZfvjQfvO05fLT8ArgJYrvs2zsmGmoyfGee0tptEWkA/edit#gid=0") %>% clean_names() %>% 
+NV_financial <- read_excel("States/Nevada/Nevada Financials.xlsx") %>% clean_names() %>% 
   rename(district_name = name)
-```
 
-```{r Nevada joined}
 NV_join1 <- NV_outcomes %>% 
   full_join(NV_demographics, by = "district_name")
 
@@ -352,16 +343,31 @@ OK_teachers <- OK_staff %>%
 
 OK_supt <- OK_staff %>% 
   filter(jobcode == "115")
+
+OK_join1 <- OK_ACT %>% 
+  inner_join(OK_staff, by = "district_name")
+
+OK_join2 <- OK_join1 %>% 
+  left_join(OK_teachers, by = "staff_id")
+
+OK_joined <- OK_join2 %>% 
+  left_join(OK_supt, by = "staff_id")
 ```
 
 ```{r Pennsylvania}
-PA_grad_rate <- read_sheet("https://docs.google.com/spreadsheets/d/1TwjzeJbMc2zu0o1Hgmx4LfVKkYfgLfe9DXGbKYLHNyQ/edit#gid=0") %>% clean_names()
+PA_grad_rate <- read_excel("States/Pennsylvania/PA Grad Rates.xlsx") %>% clean_names()
 
 PA_ACT <- read_excel("States/Pennsylvania/2019 ACT Scores for Public Schools.xlsx", skip = 7) %>%
   clean_names()
 
 PA_SAT <- read_excel("States/Pennsylvania/2019 SAT Scores for Public Schools.xlsx", skip = 5) %>%
   clean_names()
+
+PA_outcomes <- PA_ACT %>% 
+  left_join(PA_SAT, by = "school_name")
+
+PA_joined <- PA_outcomes %>% 
+  right_join(PA_grad_rate, by = c("school_name" = "school"))
 ```
 
 ```{r South Carolina, include = FALSE}
@@ -380,10 +386,21 @@ SC_expenditures <- read_excel("States/South Carolina/Expenditure FY 2017-2018.xl
 
 SC_expenditures <- SC_expenditures[-c(1,2,7:140), -1] %>% 
   rename(program = x2) %>% 
-  pivot_longer(cols = (2:102), names_to = "district_name", values_to = "amount")
+  pivot_longer(cols = (2:102), names_to = "district_name", values_to = "amount") 
 
 SC_teacher_demos <- read_excel("States/South Carolina/SOUTH CAROLINA TEACHERS BY RACE AND GENDER 2015-16.xlsx")  %>% 
-  clean_names()
+  clean_names() %>% 
+  mutate(district = to_snake_case(district)) 
+
+SC_outcomes <- SC_ACT %>% 
+  right_join(SC_SAT, by = "school_id") %>% 
+  mutate(district_name = to_snake_case(district_name)) 
+
+SC_join1 <- SC_outcomes %>% 
+  full_join(SC_teacher_demos, by = c("district_name" = "district"))
+
+SC_joined <- SC_join1 %>% 
+  full_join(SC_expenditures, by = "district_name")
 ```
 
 ```{r South Dakota}
@@ -396,11 +413,15 @@ SD_all <- SD_all[ , -c(8:38, 40:67, 70)]
 
 SD_all_financials <- SD_all[ , -c(23,24,25:64)]
 
-SD_ACT <- read_sheet("https://docs.google.com/spreadsheets/d/1kKR-7VN5iBf9WT4COqnSOvCkD_ta2xbgNnuT1JX9lUk/edit#gid=0") %>% clean_names()
+SD_ACT <- read_excel("States/South Dakota/SD ACT.xlsx") %>% clean_names()
 
 SD_joined <- SD_all_financials %>% 
   full_join(SD_ACT, by = "district_name") 
 
+SD_joined %>% 
+  group_by(district_name) %>% 
+  ggplot(aes(act_composite_score, average_teacher_salary)) + geom_point() +
+  theme_classic() + geom_smooth()
 ```
 
 ```{r Tennessee}
@@ -408,6 +429,9 @@ TN_ACT <- read_excel("States/Tennessee/ACT_district_suppressed_2019.xlsx") %>%
   clean_names()
 TN_demos <- read_excel("States/Tennessee/district_profile_2017-18.xlsx") %>% 
   clean_names()
+
+TN_joined <- TN_ACT %>% 
+  full_join(TN_demos, by = "district")
 ```
 
 ```{r Texas}
@@ -419,10 +443,21 @@ TX_SAT <- read_csv("States/Texas/sat_district_data_class_2017.csv") %>%
   clean_names() 
 TX_SAT <- na.omit(TX_SAT) 
 
+TX_financial <- read_excel("States/Texas/Total Operating Expenditures 2006-2017.xlsx", skip = 1) %>% 
+  clean_names() %>% 
+  select(1,2,36:38) 
+
+TX_outcomes <- TX_ACT %>% 
+  full_join(TX_SAT, by = "district", suffix = c("_act", "_sat")) %>% 
+    mutate_each(funs(str_replace_all(., "\"", ""))) %>% 
+    mutate_each(funs(str_replace_all(., "=", "")))
+
+TX_joined <- TX_outcomes %>% 
+  full_join(TX_financial, by = c("district" = "cdn"))
 ```
 
 ```{r Wisconsin}
-WI_ACT <- read_sheet("https://docs.google.com/spreadsheets/d/1Up_UBXF7uX0kc93cFnLVZ-8FS6h7pEnBrl-FbVaMtRk/edit#gid=0") %>% clean_names() %>% 
+WI_ACT <- read_excel("States/Wisconsin/Wisconsin ACT.xlsx") %>% clean_names() %>% 
   rename(district_name = district) 
 
 WI_financial <- read_csv("States/Wisconsin/2017-2018-12-Budget-Data-AtoZ-with-Rollups.csv") %>% 
@@ -433,15 +468,15 @@ WI_joined <- WI_ACT %>%
 ```
 
 ```{r Wyoming}
-WY_staff_salaries <- read_csv("States/Wyoming/DistrictVersionAllStaffByCategoryWithAverageSalaries.csv") %>% clean_names()
+WY_staff_salaries <- read_csv("States/Wyoming/DistrictVersionAllStaffByCategoryWithAverageSalaries.csv") %>% clean_names() %>% 
+  select(1:7) %>% 
+  rename(district_name = "district_name1")
 
-WY_ACT <- read_sheet("https://docs.google.com/spreadsheets/d/1CivlmlwmrBka8c5oqqQQ4lMqJb981Kvon6luWhZclII/edit#gid=0", skip = 1) %>% clean_names() %>% 
-  rename(english = average_5,
-         math = average_8,
-         reading = average_11, 
-         science = average_14,
-         composite = average_17)
+WY_ACT <- read_excel("States/Wyoming/WY ACT.xlsx", skip = 1) %>% clean_names() 
+
+WY_joined <- WY_ACT %>% 
+  full_join(WY_staff_salaries, by = "district_name") %>% 
+  na.omit(WY_joined)
 ```
-
 
 URL for my Shiny app: https://garrett-rolph.shinyapps.io/final-proj-shiny/
