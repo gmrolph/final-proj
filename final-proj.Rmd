@@ -18,7 +18,7 @@ library(googlesheets)
 library(pdftools)
 library(snakecase)
 ```
-The purpose of this project is to analyze the differences in educational outcome between students in different educational circumstances across the country. I plan to include data from as many of the 50 states as I can access, though some states are much more restrictive than others. Below, I have selected some data that was readily available to me on the Massachusetts Department of Education Website. Included is data detailing SAT performance by school district, per pupil expenditures by school district, and staff demographics by school district. 
+
 
 ```{r Alabama}
 AL_outcomes <- read_excel("States/Alabama/2018-2019 Report Card Profile.xlsx", skip = 4)
@@ -30,12 +30,15 @@ AR_ACT <- read_excel("States/Arkansas/G11ACT_Summary_2019.xlsx") %>% clean_names
 ```
 
 ```{r California}
-CA_directory <- read_excel("States/California/pubschls.xlsx", skip = 5) %>% 
-  clean_names()
 CA_SAT <- read_excel("States/California/sat19.xls") %>% clean_names()
+CA_financial <- read_excel("States/California/j90summary1819.xlsx", skip = 167) %>% 
+  select(2,6) %>% 
+  rename(district = ...2,
+         average_salary = ...6) %>% 
+  na.omit() 
 
-CA_joined <- CA_directory %>% 
-  full_join(CA_SAT, by = c("school" = "sname"))
+CA_joined <- CA_SAT %>% 
+  full_join(CA_financial, by = c("dname" = "district"))
 ```
 
 ```{r Colorado, message = FALSE}
@@ -70,19 +73,26 @@ CO_teacher_demos <- read_excel("States/Colorado/2018-19 Teachers by District, Ra
   CO_SAT_sals <- inner_join(CO_SAT, CO_teacher_sals, 
                             by = c("district_name" = "district_name")) %>% 
   rename("average_total_salary" = "x8") %>% 
-  filter(!number_of_valid_scores == "< 16")
+  filter(!number_of_valid_scores == "< 16") %>% 
+  mutate(average_sal = str_replace_all(x6, "0", NA_character_)) %>% 
+  na.omit() %>% 
+  mutate(total_score_mean_score = as.numeric(as.character(total_score_mean_score)),
+         average_sal = as.numeric(as.character(average_sal)))
 ```
 
 ```{r}
 CO_SAT_sals %>%
-  group_by(gender, school_name) %>% 
+  group_by(school_name) %>% 
   filter(test == "SAT") %>% 
-  arrange(desc(mathematics_mean_score)) %>% 
-  head(20) %>% 
-  ggplot(aes(school_name, mathematics_mean_score, color = gender)) + geom_col() +
+  arrange(desc(total_score_mean_score)) %>% 
+  ggplot(aes(total_score_mean_score, average_sal)) + geom_point(position = 'dodge') + 
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  expand_limits(y = -1)
+  geom_smooth() +
+  labs(title = "Correlation of Colorado's SAT Scores to Teacher Salaries",
+       subtitle = "Where Score is Average Total SAT Score and Salary is Average Teacher Salary",
+       y = "Salary", 
+       x = "Score")
 ```
 
 ```{r Colorado Top 20 Math Scores}
@@ -128,7 +138,7 @@ CN_join1 <- CN_expenditures %>%
   full_join(CN_teacher_demos, by = c("district" = "district"))
 ```
 
-```{r Florida, include = FALSE}
+```{r Florida}
 FL_ACT <- read_excel("States/Florida/2017ACTSchool.xlsx", skip = 3) %>% 
   clean_names() %>% 
   rename(district_number = "x1",
@@ -157,16 +167,18 @@ FL_joined <- FL_join1 %>%
   select(-average) %>% 
   na.omit() 
 
-FL_joined %>% 
+florida_graph <- FL_joined %>% 
   group_by(district_name) %>% 
   arrange(desc(composite)) %>% 
   ggplot(aes(x = (as.numeric(as.character(composite))), y = average_salary)) + 
   geom_point(position = 'dodge') + theme_classic() + 
   geom_smooth(method = lm, color = 'dark red') +
-  labs(title = "Correlation Between ACT Score and Teacher Salary",
+  labs(title = "Correlation between Florida's ACT Scores and Teacher Salaries",
        subtitle = "Where salary is average district salary and score is composite ACT score",
        y = "Salary (USD)",
        x = "Score")
+
+florida_graph
 ```
 
 ```{r Georgia, include = FALSE}
@@ -376,11 +388,6 @@ SC_ACT <- read_excel("States/South Carolina/SAT2019_Schoolsfinal.xlsx", skip = 2
 SC_SAT <- read_excel("States/South Carolina/ACT-Schools2019.xlsx", skip = 1) %>% 
   clean_names()
 
-## The SC_expenditures needs to be fixed, and I think I'd like to pivot the
-## columns and rows around. I don't know what has to be done exactly, but they
-## have 100 school districts in each column and I would definitely get more
-## utility out of having them in rows instead so I could join on the rows.
-
 SC_expenditures <- read_excel("States/South Carolina/Expenditure FY 2017-2018.xlsx", skip = 2)%>%
   clean_names() 
 
@@ -421,7 +428,11 @@ SD_joined <- SD_all_financials %>%
 SD_joined %>% 
   group_by(district_name) %>% 
   ggplot(aes(act_composite_score, average_teacher_salary)) + geom_point() +
-  theme_classic() + geom_smooth()
+  theme_classic() + geom_smooth() +
+  labs(title = "Correlation of South Dakota's ACT Scores to Teacher Salaries",
+       subtitle = "Where Score is Average ACT Score and Salary is the district's average salary",
+       y = "Salary (USD)",
+       x = "Score")
 ```
 
 ```{r Tennessee}
