@@ -17,6 +17,7 @@ library(googlesheets4)
 library(googlesheets)
 library(pdftools)
 library(snakecase)
+library(zoo)
 ```
 
 
@@ -73,15 +74,15 @@ CO_teacher_demos <- read_excel("States/Colorado/2018-19 Teachers by District, Ra
   CO_SAT_sals <- inner_join(CO_SAT, CO_teacher_sals, 
                             by = c("district_name" = "district_name")) %>% 
   rename("average_total_salary" = "x8") %>% 
-  filter(!number_of_valid_scores == "< 16") %>% 
+  filter(!number_of_valid_scores == "< 16") 
+
+CO_SAT_and_salary <- CO_SAT_sals %>% 
   mutate(average_sal = str_replace_all(x6, "0", NA_character_)) %>% 
   na.omit() %>% 
   mutate(total_score_mean_score = as.numeric(as.character(total_score_mean_score)),
          average_sal = as.numeric(as.character(average_sal)))
-```
 
-```{r}
-CO_SAT_sals %>%
+CO_SAT_and_salary %>%
   group_by(school_name) %>% 
   filter(test == "SAT") %>% 
   arrange(desc(total_score_mean_score)) %>% 
@@ -124,18 +125,68 @@ ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
 CN_expenditures <- read_excel("States/Connecticut/CN_financial.xlsx", skip = 1) %>% 
   clean_names()
 
-CN_expenditures <- CN_expenditures[ ,-c(3:6)]
+CN_expenditures <- CN_expenditures[ ,-c(3:6)] %>% 
+  na.locf(., fromLast = TRUE) %>% 
+  filter(type == "Total Expenditures") %>% 
+  rename(amount = "x2016_17")
 
-CN_teacher_demos <- read_excel("States/Connecticut/CN teacher demos.xlsx", skip = 1) %>% clean_names() 
+CN_ppe <- read_csv("States/Connecticut/perPupilExpeditures.csv")
 
-CN_teacher_demos <- CN_teacher_demos[ ,-c(3:10)]
+CN_teacher_demos <- read_excel("States/Connecticut/CN teacher demos.xlsx", skip = 1) %>% clean_names() %>% 
+  na.locf(., fromLast = TRUE)
+
+CN_teacher_demos <- CN_teacher_demos[ ,-c(3:10)] 
 
 CN_SAT <- read_excel("States/Connecticut/CN SAT.xlsx", skip = 2) %>% clean_names()
 
-CN_SAT <- CN_SAT[ , -c(3:11)]
+CN_SAT <- CN_SAT[ , -c(3:11)] 
+
+CN_SAT <-  data.frame(lapply(CN_SAT, function(x) {
+                gsub('\\*', NA_character_, x)
+             })) %>% 
+  na.locf(., fromLast = TRUE) %>% 
+  group_by(district) 
+
+CN_SAT_ELA <- CN_SAT %>% 
+  filter(subject == "ELA")
+
+CN_SAT_math <- CN_SAT %>% 
+  filter(subject == "Math")
 
 CN_join1 <- CN_expenditures %>% 
-  full_join(CN_teacher_demos, by = c("district" = "district"))
+  full_join(CN_SAT_ELA, by = c("district" = "district"))
+
+CN_join2 <- CN_expenditures %>% 
+  full_join(CN_SAT_math, by = c("district" = "district"))
+
+CN_join3 <- CN_SAT %>% 
+  full_join(CN_teacher_demos, by = "district") 
+
+CN_join1 %>% 
+  ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
+  theme_classic() + geom_smooth(method = 'lm') +
+  labs(title = "Correlation of Connecticut's Expenditures to Score",
+       subtitle = "Where Amount is total district expenditures and score is average ELA score",
+       y = "Amount",
+       x = "Score")
+
+CN_join2 %>% 
+  ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
+  theme_classic() + geom_smooth(method = 'lm') +
+  labs(title = "Correlation of Connecticut's Expenditures to Score",
+       subtitle = "Where Amount is total district expenditures and score is average Math score",
+       y = "Amount",
+       x = "Score")
+
+CN_join3 %>% 
+  filter(race == "White") %>% 
+  ggplot(aes(as.numeric(as.character(percent_of_total_12)), as.numeric(as.character(average_score_14)))) + 
+  geom_point(position = 'dodge') +
+  geom_smooth(method = 'lm') + theme_classic() +
+  labs(title = "Connecticut's Correlation of staff diversity to SAT Score",
+       subtitle = "Where score is average SAT score and percent is % of white instructors",
+       y = "Score",
+       x = "Percent")
 ```
 
 ```{r Florida}
