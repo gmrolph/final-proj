@@ -121,7 +121,7 @@ CO_gendered_outcomes %>%
 ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
 ```
 
-```{r Connecticut, message = FALSE}
+```{r Connecticut, message = FALSE, cache = TRUE}
 CN_expenditures <- read_excel("States/Connecticut/CN_financial.xlsx", skip = 1) %>% 
   clean_names()
 
@@ -129,8 +129,6 @@ CN_expenditures <- CN_expenditures[ ,-c(3:6)] %>%
   na.locf(., fromLast = TRUE) %>% 
   filter(type == "Total Expenditures") %>% 
   rename(amount = "x2016_17")
-
-CN_ppe <- read_csv("States/Connecticut/perPupilExpeditures.csv")
 
 CN_teacher_demos <- read_excel("States/Connecticut/CN teacher demos.xlsx", skip = 1) %>% clean_names() %>% 
   na.locf(., fromLast = TRUE)
@@ -161,6 +159,7 @@ CN_join2 <- CN_expenditures %>%
 
 CN_join3 <- CN_SAT %>% 
   full_join(CN_teacher_demos, by = "district") 
+
 
 CN_join1 %>% 
   ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
@@ -218,7 +217,7 @@ FL_joined <- FL_join1 %>%
   select(-average) %>% 
   na.omit() 
 
-florida_graph <- FL_joined %>% 
+florida_teachers <- FL_joined %>% 
   group_by(district_name) %>% 
   arrange(desc(composite)) %>% 
   ggplot(aes(x = (as.numeric(as.character(composite))), y = average_salary)) + 
@@ -229,78 +228,163 @@ florida_graph <- FL_joined %>%
        y = "Salary (USD)",
        x = "Score")
 
-florida_graph
+florida_teachers
+
+florida_superintendents <- FL_joined %>% 
+  arrange(desc(composite)) %>% 
+  ggplot(aes(x = (as.numeric(as.character(composite))), y = (as.numeric(as.character(superintendent))))) + 
+  geom_point(position = 'dodge') + theme_classic() + 
+  geom_smooth(method = lm, color = 'dark red') +
+  labs(title = "Correlation between Florida's ACT Scores and Superintendent Salaries",
+       subtitle = "Where salary is average district salary and score is composite ACT score",
+       y = "Salary (USD)",
+       x = "Score")
+
+florida_superintendents
+
+florida_school_board <- FL_joined %>% 
+  arrange(desc(composite)) %>% 
+  ggplot(aes(x = (as.numeric(as.character(composite))), y = (as.numeric(as.character(school_board_member))))) + 
+  geom_point(position = 'dodge') + theme_classic() + 
+  geom_smooth(method = lm, color = 'dark red') +
+  labs(title = "Correlation between Florida's ACT Scores and School Board Salaries",
+       subtitle = "Where salary is average district salary and score is composite ACT score",
+       y = "Salary (USD)",
+       x = "Score")
+
+florida_school_board
 ```
 
 ```{r Georgia, include = FALSE}
-ga_SAT <- read_excel("States/Georgia/School Level SAT.xlsx", skip = 3,
+GA_SAT <- read_excel("States/Georgia/School Level SAT.xlsx", skip = 3,
                      col_types = c("numeric", "text",
                                       "numeric", "numeric",
                                       "numeric", "numeric")) %>% 
   rename(math = "Math Mean") %>% clean_names()
   
-ga_SAT <- data.frame(lapply(ga_SAT, function(x) {
+GA_SAT <- data.frame(lapply(GA_SAT, function(x) {
                 gsub('\\*', NA_character_, x)
              })) 
 
-ga_SAT <- na.omit(ga_SAT) %>% 
+GA_SAT <- na.omit(GA_SAT) %>% 
   mutate(avg_math = mean(math)) %>% 
-  filter(school_name == (str_replace(school_name, "HS", "High School")))
+  filter(school_name == (str_replace(school_name, "HS", "High School"))) 
+
+
   
 
-ga_ACT <- read_excel("States/Georgia/ACT Scores School 2019.xlsx",
+GA_ACT <- read_excel("States/Georgia/ACT Scores School 2019.xlsx",
                      col_types = c("text","numeric","text",
                                    "numeric","numeric","numeric","numeric")) %>% 
-  clean_names()
+  clean_names() %>% 
+  mutate(hs_name = to_snake_case(hs_name))
 
-ga_ACT <- data.frame(lapply(ga_ACT, function(x) {
+GA_ACT <- data.frame(lapply(GA_ACT, function(x) {
                 gsub('\\*', NA_character_, x)
              })) %>% 
-  na.omit(ga_ACT) %>% 
+  na.omit(GA_ACT) %>% 
   mutate(composite = mean(average_composite_score, na.rm = TRUE)) %>% 
         filter(hs_name == (str_replace(hs_name, "HS", "High School")))
 
 
-ga_demographics <- read_csv("States/Georgia/FTE Enrollment by Race_Ethnicity and Gender Fiscal Year2020-1 Data Report.csv", skip = 3)
+GA_demographics <- read_csv("States/Georgia/FTE Enrollment by Race_Ethnicity and Gender Fiscal Year2020-1 Data Report.csv", skip = 4) %>% 
+  clean_names() %>% 
+  head(6826) %>% 
+    mutate(ethnic_hispanic = 
+             as.numeric(as.character(str_replace_all(ethnic_hispanic, "\\*", "0"))),
+           race_american_indian = 
+             as.numeric(as.character(str_replace_all(race_american_indian, "\\*", "0"))),
+           race_asian = 
+             as.numeric(as.character(str_replace_all(race_asian, "\\*", "0"))),
+           race_black = 
+             as.numeric(as.character(str_replace_all(race_black, "\\*", "0"))),
+           race_pacific_islander = 
+             as.numeric(as.character(str_replace_all(race_pacific_islander, "\\*", "0"))),
+           race_white = 
+             as.numeric(as.character(str_replace_all(race_white, "\\*", "0"))),
+           two_or_more_races = 
+             as.numeric(as.character(str_replace_all(two_or_more_races, "\\*", "0"))),
+           total = rowSums(GA_demographics[5:11]),
+           percent_white = (race_white/total)*100) 
 
-GA_join1 <- ga_SAT %>% 
-  full_join(ga_ACT, by = c("school_name" = "hs_name")) 
-```
 
-```{r Hawaii}
-## I have a PDF for the ACT scores that I want Logen to convert into an excel file, and then I also would like him to work to find data on student enrollment percentiles.
+GA_outcomes <- GA_SAT %>% 
+  full_join(GA_ACT, by = c("school_name" = "hs_name")) 
+
 ```
 
 ```{r Indiana}
 IN_SAT <- read_excel("States/Indiana/sat-corporation-and-school.xlsx",
                      col_types = c("text", "numeric", "text", "numeric", "numeric",
                                    "numeric", "numeric", "numeric", "numeric", "numeric")) %>% clean_names() %>% 
-  mutate(percent_graduates_taking_sat = (percent_graduates_taking_sat*100))
+  mutate(percent_graduates_taking_sat = (percent_graduates_taking_sat*100)) %>% 
+  filter(year == "2017-18")
 
 IN_ACT <- read_excel("States/Indiana/act-corporation-and-school.xlsx", 
                      col_types = c("text", "numeric", "text", "numeric", "numeric",
                                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% clean_names() %>% 
   mutate(percent_graduates_taking_act = (percent_graduates_taking_act*100)) %>% 
-  filter(year == "2017-2018")
+  filter(year == "2017-18")
 
 IN_financial <- read_excel("States/Indiana/fy2019-school-level-financial-data-media.xlsx") %>% 
   clean_names() %>% 
   filter(str_detect(school_type, "High School")) 
 
 IN_join1 <- IN_SAT %>% 
-  full_join(IN_ACT, by = "corp_name")
+ full_join(IN_ACT, by = c("corp_id" = "corp_no"), suffix = c("_sat", "_act")) %>% 
+  group_by(corp_id) %>% 
+  select(-year_sat, -corp_id, -year_act, -corp_name_act)
 
 IN_joined <- IN_join1 %>% 
-  full_join(IN_financial, by = c("corp_name" = "school_name"))
+  full_join(IN_financial, by = c("corp_name_sat" = "corporation_name"))
+
+IN_joined %>% 
+  filter(avg_composite_math_and_verbal > 400) %>% 
+  filter(instructional_per_student < 90000) %>% 
+  ggplot(aes(avg_composite_math_and_verbal, instructional_per_student)) +
+  geom_point() + geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Indiana's SAT Scores to Spending",
+       subtitle = "Where Score is the district's average composite score and 
+Amount is instructional spending per student",
+       y = "Amount", 
+       x = "Score")
+
+IN_joined %>% 
+  filter(instructional_per_student < 90000) %>% 
+  ggplot(aes(avg_composite_score, instructional_per_student)) +
+  geom_point() + geom_smooth(method = lm, color = 'dark grey', se = F) + theme_classic() +
+  labs(title = "Correlation of Indiana's ACT Scores to Spending",
+       subtitle = "Where Score is the district's average composite score and 
+Amount is instructional spending per student",
+       y = "Amount", 
+       x = "Score")
 ```
 
 ```{r Iowa}
 IO_salaries <- read_excel("States/Iowa/2019-2020 Iowa Public School Full Time Teachers_1.xlsx", skip = 13) %>% clean_names() %>%
-  select(-x6, -x10, -x13, -x15, -x19, -x23, -x26, -x28, -x31, -x41, -x51) 
+  select(-x6, -x10, -x13, -x15, -x19, -x23, -x26, -x28, -x31, -x41, -x51) %>% 
+  mutate(district_name = to_snake_case(district_name))
 
 IO_demos <- read_excel("States/Iowa/2019-2020 Iowa Public School District PreK-12 Enrollments by District, Grade, Race and Gender.xlsx", skip = 4) %>% clean_names()
 
-IO_ACT <- read_excel("States/Iowa/Iowa_2019_Public_Schools_Graduating_Class_5yr_trends_District level_no small Ns.xlsx", skip = 2) %>% clean_names()
+IO_ACT <- read_excel("States/Iowa/Iowa_2019_Public_Schools_Graduating_Class_5yr_trends_District level_no small Ns.xlsx", skip = 2) %>% clean_names() %>% 
+  filter(grad_year == "2018") %>% 
+  mutate(district_name = to_snake_case(district_name))
+
+IO_ACT_sals <- IO_salaries %>% 
+  full_join(IO_ACT, by = "district_name") 
+
+IO_ACT_demos <- IO_demos %>% 
+  full_join(IO_demos, by = "district_name")
+
+IO_ACT_graph <- IO_ACT_sals %>% 
+  mutate(ft_teacher_teacher_leader_average_total_salary = 
+           as.numeric(as.character(ft_teacher_teacher_leader_maximum_total_salary)),
+         avg_comp = as.numeric(as.character(avg_comp))) %>% 
+  ggplot(aes(avg_comp, ft_teacher_teacher_leader_average_total_salary)) +
+  geom_point() + theme_classic()
+
+IO_ACT_graph
 ```
 
 ```{r Kentucky}
@@ -489,6 +573,7 @@ SD_joined %>%
 ```{r Tennessee}
 TN_ACT <- read_excel("States/Tennessee/ACT_district_suppressed_2019.xlsx") %>% 
   clean_names()
+
 TN_demos <- read_excel("States/Tennessee/district_profile_2017-18.xlsx") %>% 
   clean_names()
 
