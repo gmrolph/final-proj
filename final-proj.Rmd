@@ -18,6 +18,7 @@ library(googlesheets)
 library(pdftools)
 library(snakecase)
 library(zoo)
+options(scipen = 999)
 ```
 
 
@@ -32,6 +33,7 @@ AR_ACT <- read_excel("States/Arkansas/G11ACT_Summary_2019.xlsx") %>% clean_names
 
 ```{r California}
 CA_SAT <- read_excel("States/California/sat19.xls") %>% clean_names()
+CA_ACT <- read_excel("States/California/act19.xls") %>% clean_names()
 CA_financial <- read_excel("States/California/j90summary1819.xlsx", skip = 167) %>% 
   select(2,6) %>% 
   rename(district = ...2,
@@ -255,7 +257,7 @@ florida_school_board <- FL_joined %>%
 florida_school_board
 ```
 
-```{r Georgia, include = FALSE}
+```{r Georgia, include = FALSE, warning = FALSE}
 GA_SAT <- read_excel("States/Georgia/School Level SAT.xlsx", skip = 3,
                      col_types = c("numeric", "text",
                                       "numeric", "numeric",
@@ -407,16 +409,54 @@ select(1,2,34,36) %>%
          "2019-2020" = "x2019_2020")
 
 KY_join1 <- KY_ACT %>% 
-  right_join(KY_teacher_salaries, by = c("dist_number" = "dist_no")) 
+  right_join(KY_teacher_salaries, by = c("dist_number" = "dist_no")) %>% 
+  mutate(composite_mean_score = as.numeric(as.character(composite_mean_score)))
 
 KY_join2 <- KY_join1 %>% 
-  right_join(KY_admin_salaries, by = c("dist_number" = "district_name"))
+  right_join(KY_admin_salaries, by = c("dist_number" = "district_name")) %>% 
+  mutate(`2019-2020` = as.numeric(as.character(`2019-2020`))) %>% 
+  filter(`2019-2020` < 250000)
+
+KY_ACT_finance <- KY_ACT %>% 
+  full_join(KY_finances, by = "cntyno") %>% 
+  mutate(composite_mean_score = as.numeric(as.character(composite_mean_score)),
+         finance_value = str_replace(finance_value, "\\$", "")) %>% 
+  filter(disagg_label == "All Students") 
 
 KY_join3 <- KY_join2 %>% 
-  right_join(KY_finances, by = "dist_number")
+  right_join(KY_finances, by = "dist_number") %>% 
+  filter(finance_label == "Average Teacher Salary") 
 
 KY_join4 <- KY_join3 %>% 
   right_join(KY_learning_envir, by = "dist_number")
+
+KY_join1 %>% 
+  ggplot(aes(composite_mean_score, x2018_19)) + geom_point() + 
+  geom_smooth(method = lm, color = "dark red")
+
+KY_join2 %>% 
+  ggplot(aes(composite_mean_score, `2019-2020`)) + geom_point() +
+  geom_smooth(method = lm)
+
+KY_ACT_teacher_filtered <- KY_ACT_finance %>% 
+  filter(finance_label == "Average Teacher Salary") %>% 
+  filter(!sch_name.x == "---District Total---") 
+
+KY_ACT_teacher <- KY_ACT_teacher_filtered %>% 
+  mutate(finance_value = 
+           as.numeric(gsub("[\\$,]", "", KY_ACT_teacher_filtered$finance_value))) %>% 
+  ggplot(aes(composite_mean_score, finance_value)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+KY_ACT_teacher
+
+KY_ACT_principal <- KY_ACT_finance %>% 
+  mutate(finance_value = as.numeric(gsub(",", "", finance_value))) %>% 
+  filter(finance_label == "Average Principal Salary") %>% 
+  ggplot(aes(composite_mean_score, finance_value)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+KY_ACT_principal
 ```
 
 ```{r Louisiana}
@@ -427,10 +467,19 @@ LA_ACT <- read_excel("States/Louisiana/act-scores-class-of-2019.xlsx", skip = 4)
   clean_names()
 
 LA_joined <- LA_ACT %>% 
-  full_join(LA_teacher_salaries, by = c("district" = "lea_name"))
+  full_join(LA_teacher_salaries, by = c("district" = "lea_name")) %>% 
+  rename(average_composite_score = x2018_2019_average_composite_score) %>% 
+  mutate(average_composite_score = as.numeric(average_composite_score)) %>% 
+  filter(average_composite_score >15)
+
+LA_ACT_teacher <- LA_joined %>% 
+  ggplot(aes(average_composite_score, avg_classroom_teachers_salary_without_extra_compensation_7)) +
+  geom_point() + geom_smooth(method = lm)
+
+LA_ACT_teacher
 ```
 
-```{r Massachusetts, include = FALSE}
+```{r Massachusetts}
 MA_SAT_18_19 <- read_excel("States/Massachusetts/sat_performance.xlsx", 
                         col_types = c("text", "numeric",
                                       "numeric", "numeric",
@@ -453,13 +502,77 @@ MA_PPE_18 <- read_excel("States/Massachusetts/PerPupilExpenditures.xlsx",
   select(-x9)
 
 mass_staff_demographics <- read_excel("States/Massachusetts/staffracegender.xlsx",
-                                      skip = 1)
+                                      skip = 1) %>% 
+  clean_names()
 
-mass_salaries <- read_excel("States/Massachusetts/TeacherSalaries.xlsx")
+mass_salaries <- read_excel("States/Massachusetts/TeacherSalaries.xlsx", skip = 1) %>% 
+  clean_names()
 
 MA_join1 <- MA_SAT_18_19 %>% 
   full_join(MA_PPE_18, by = c("district_name" = "district_name",
                               "district_code" = "district_code"))
+
+MA_join2 <- MA_SAT_18_19 %>% 
+  full_join(mass_staff_demographics, by = c("district_name" = "district_school_name")) %>% 
+  mutate(african_american_number = as.numeric(as.character(african_american_number)),
+         asian_number = as.numeric(as.character(asian_number)),
+         hispanic_number = as.numeric(as.character(hispanic_number)),
+         white_number = as.numeric(as.character(white_number)),
+         native_american_number = as.numeric(as.character(native_american_number)),
+         native_hawaiian_pacific_islander_number = as.numeric(as.character(native_hawaiian_pacific_islander_number)),
+         multi_race_non_hispanic_number =
+           as.numeric(as.character(multi_race_non_hispanic_number)),
+        total = rowSums(MA_join2[10:16]),
+        percent_white = ((white_number/total)*100))
+
+MA_SAT_PPE_math <- MA_join1 %>% 
+  mutate(total_expenditures_per_pupil = 
+           as.numeric(gsub("[\\$,]", "", MA_join1$total_expenditures_per_pupil))) %>% 
+  ggplot(aes(math, total_expenditures_per_pupil)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+MA_SAT_PPE_math
+
+MA_SAT_PPE_reading <- MA_join1 %>% 
+  mutate(total_expenditures_per_pupil = 
+           as.numeric(gsub("[\\$,]", "", MA_join1$total_expenditures_per_pupil))) %>% 
+  ggplot(aes(reading_writing, total_expenditures_per_pupil)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+MA_SAT_PPE_reading
+
+MA_SAT_demos_reading <- MA_join2 %>% 
+  filter(percent_white > 35) %>% 
+  ggplot(aes(percent_white, reading_writing)) + geom_point() + 
+  geom_smooth(method = lm)
+
+MA_SAT_demos_reading
+
+MA_SAT_demos_math <- MA_join2 %>% 
+  filter(percent_white > 35) %>% 
+  ggplot(aes(percent_white, math)) + geom_point() + 
+  geom_smooth(method = lm)
+
+MA_SAT_demos_math
+
+MA_SAT_sals <- MA_SAT_18_19 %>% 
+  select(-writing) %>% 
+  full_join(mass_salaries, by = "district_name") %>% 
+  na.omit(MA_SAT_18_19) %>% 
+  mutate(average_salary = str_replace(average_salary, "\\$", ""),
+         average_salary = as.numeric(str_replace(average_salary, ",", "")))
+
+MA_SAT_sals_reading <- MA_SAT_sals %>% 
+  ggplot(aes(reading_writing, average_salary)) + geom_point() +
+  geom_smooth(method = lm)
+  
+MA_SAT_sals_reading
+
+MA_SAT_sals_math <- MA_SAT_sals %>% 
+  ggplot(aes(math, average_salary)) + geom_point() +
+  geom_smooth(method = lm)
+
+MA_SAT_sals_math
 ```
 
 ```{r Nevada}
@@ -477,6 +590,18 @@ NV_join1 <- NV_outcomes %>%
 
 NV_joined <- NV_join1 %>% 
   full_join(NV_financial, by = "district_name")
+
+NV_demo_outcomes <- NV_joined %>% 
+  ggplot(aes(white_percent, reading_percent_meets_standard)) +
+  geom_point() + geom_smooth(method = lm)
+
+NV_demo_outcomes
+
+NV_financial_outcomes <- NV_joined %>% 
+  ggplot(aes(instruction_percent, reading_percent_meets_standard)) +
+  geom_point() + geom_smooth(method = lm)
+
+NV_financial_outcomes
 ```
 
 ```{r Oklahoma}
