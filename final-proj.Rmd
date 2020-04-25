@@ -611,19 +611,47 @@ OK_ACT <- read_excel("States/Oklahoma/District level_ACT_2016_Senior.xlsx") %>%
 OK_staff <- read_excel("States/Oklahoma/CertStaff_SPR-FY1920_2020-03-12-MidYr.xlsx", skip = 1) %>% clean_names() 
 
 OK_teachers <- OK_staff %>% 
-  filter(jobcode == "210") 
+  filter(jobcode == "210") %>% 
+  filter(jobdesc == "TEACHER") %>% 
+  filter(degree == "4") %>% 
+  filter(race == "5") %>% 
+  filter(fte == "1") %>% 
+  filter(str_detect(subject_desc, "ELEM") == FALSE) %>% 
+  filter(gender == "M") %>% 
+  filter(subject_desc == "MATHEMATICS" | subject_desc == "SCIENCE" | 
+           subject_desc == "SOCIAL STUDIES" | subject_desc == "MUSIC") 
 
 OK_supt <- OK_staff %>% 
-  filter(jobcode == "115")
+  filter(jobcode == "115") %>% 
+  mutate(co = as.numeric(as.character(co)))
 
-OK_join1 <- OK_ACT %>% 
-  inner_join(OK_staff, by = "district_name")
+OK_ACT_staff <- OK_ACT %>% 
+  inner_join(OK_staff, by = "district_name") %>% 
+  filter(jobdesc == "TEACHER") %>% 
+  filter(degree == "4") %>% 
+  filter(race == "5") %>% 
+  filter(fte == "1") %>% 
+  filter(str_detect(subject_desc, "ELEM") == FALSE) %>% 
+  filter(gender == "M") %>% 
+  filter(subject_desc == "MATHEMATICS" | subject_desc == "SCIENCE" | 
+           subject_desc == "SOCIAL STUDIES" | subject_desc == "MUSIC") %>% 
+  mutate(composite = as.numeric(as.character(composite)))
 
-OK_join2 <- OK_join1 %>% 
-  left_join(OK_teachers, by = "staff_id")
+OK_ACT_staff %>% 
+  ggplot(aes(composite, base_salary, color = subject_desc)) + geom_point() +
+  geom_smooth(method = lm, se = F)
 
-OK_joined <- OK_join2 %>% 
-  left_join(OK_supt, by = "staff_id")
+OK_ACT_teachers <- OK_ACT %>% 
+  full_join(OK_teachers, by = "county_name")
+
+OK_ACT_supt <- OK_ACT %>% 
+  full_join(OK_supt, by = c("countycode" = "co")) %>% 
+  filter(!school_name == "DISTRICT WIDE SERVICES") %>% 
+  mutate(composite = as.numeric(as.character(composite))) %>% 
+  ggplot(aes(composite, base_salary)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+OK_ACT_supt
 ```
 
 ```{r Pennsylvania}
@@ -639,7 +667,8 @@ PA_outcomes <- PA_ACT %>%
   left_join(PA_SAT, by = "school_name")
 
 PA_joined <- PA_outcomes %>% 
-  right_join(PA_grad_rate, by = c("school_name" = "school"))
+  right_join(PA_grad_rate, by = c("school_name" = "school")) %>% 
+  select(-migrant_grad_rate, -el_grad_rate) 
 ```
 
 ```{r South Carolina, include = FALSE}
