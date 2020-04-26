@@ -305,9 +305,12 @@ GA_demographics <- read_csv("States/Georgia/FTE Enrollment by Race_Ethnicity and
            race_white = 
              as.numeric(as.character(str_replace_all(race_white, "\\*", "0"))),
            two_or_more_races = 
-             as.numeric(as.character(str_replace_all(two_or_more_races, "\\*", "0"))),
+             as.numeric(as.character(str_replace_all(two_or_more_races, "\\*", "0"))))
+
+GA_demographics <- GA_demographics %>% 
+  mutate(
            total = rowSums(GA_demographics[5:11]),
-           percent_white = (race_white/total)*100) 
+           percent_white = (race_white/total)*100)
 
 
 GA_outcomes <- GA_SAT %>% 
@@ -521,7 +524,10 @@ MA_join2 <- MA_SAT_18_19 %>%
          native_american_number = as.numeric(as.character(native_american_number)),
          native_hawaiian_pacific_islander_number = as.numeric(as.character(native_hawaiian_pacific_islander_number)),
          multi_race_non_hispanic_number =
-           as.numeric(as.character(multi_race_non_hispanic_number)),
+           as.numeric(as.character(multi_race_non_hispanic_number)))
+
+MA_join2 <- MA_join2 %>% 
+  mutate(
         total = rowSums(MA_join2[10:16]),
         percent_white = ((white_number/total)*100))
 
@@ -668,10 +674,18 @@ PA_outcomes <- PA_ACT %>%
 
 PA_joined <- PA_outcomes %>% 
   right_join(PA_grad_rate, by = c("school_name" = "school")) %>% 
-  select(-migrant_grad_rate, -el_grad_rate) 
+  select(-migrant_grad_rate, -el_grad_rate) %>% 
+  mutate(composite_score_average = as.numeric(as.character(composite_score_average)),
+         cohort_grad_rate = (cohort_grad_rate*100))
+
+PA_ACT_grad <- PA_joined %>% 
+  ggplot(aes(composite_score_average, cohort_grad_rate)) + geom_point() +
+  geom_smooth(method = 'lm')
+
+PA_ACT_grad
 ```
 
-```{r South Carolina, include = FALSE}
+```{r South Carolina}
 SC_ACT <- read_excel("States/South Carolina/SAT2019_Schoolsfinal.xlsx", skip = 2) %>% 
   clean_names()
 SC_SAT <- read_excel("States/South Carolina/ACT-Schools2019.xlsx", skip = 1) %>% 
@@ -696,7 +710,43 @@ SC_join1 <- SC_outcomes %>%
   full_join(SC_teacher_demos, by = c("district_name" = "district"))
 
 SC_joined <- SC_join1 %>% 
-  full_join(SC_expenditures, by = "district_name")
+  full_join(SC_expenditures, by = "district_name") %>% 
+  mutate(total_score = as.numeric(as.character(total_score)),
+         mean_composite_score = as.numeric(as.character(mean_composite_score))) %>% 
+  filter(!mean_composite_score == "0")
+
+SC_joined <- SC_joined %>% 
+  mutate(white_total = rowSums(SC_joined[20:23]),
+         percent_white = ((white_total/total_staff)*100)) %>% 
+  tail(290)
+
+SC_SAT_financial <- SC_joined %>% 
+  na.omit() %>% 
+  ggplot(aes(total_score, amount)) + geom_point() +
+  geom_smooth(method = lm)
+
+SC_SAT_financial
+
+SC_ACT_financial <- SC_joined %>% 
+  na.omit() %>% 
+  ggplot(aes(mean_composite_score, amount)) + geom_point() +
+  geom_smooth(method = lm)
+
+SC_ACT_financial
+
+SC_SAT_demos <- SC_joined %>% 
+  ggplot(aes(total_score, percent_white)) + geom_point() +
+  geom_smooth(method = lm) + 
+  ylim(25,100)
+
+SC_SAT_demos
+
+SC_ACT_demos <- SC_joined %>% 
+  ggplot(aes(mean_composite_score, percent_white)) + geom_point() +
+  geom_smooth(method = lm) +
+  ylim(25,100)
+ 
+SC_ACT_demos
 ```
 
 ```{r South Dakota}
@@ -717,11 +767,17 @@ SD_joined <- SD_all_financials %>%
 SD_joined %>% 
   group_by(district_name) %>% 
   ggplot(aes(act_composite_score, average_teacher_salary)) + geom_point() +
-  theme_classic() + geom_smooth() +
+  theme_classic() + geom_smooth(method = lm, color = 'dark red') +
   labs(title = "Correlation of South Dakota's ACT Scores to Teacher Salaries",
        subtitle = "Where Score is Average ACT Score and Salary is the district's average salary",
        y = "Salary (USD)",
        x = "Score")
+
+SD_ACT_stsr <- SD_joined %>% 
+  ggplot(aes(act_composite_score, student_to_staff_ratio)) + geom_point() +
+  geom_smooth(method = lm)
+
+SD_ACT_stsr
 ```
 
 ```{r Tennessee}
@@ -732,7 +788,32 @@ TN_demos <- read_excel("States/Tennessee/district_profile_2017-18.xlsx") %>%
   clean_names()
 
 TN_joined <- TN_ACT %>% 
-  full_join(TN_demos, by = "district")
+  full_join(TN_demos, by = "district") %>% 
+  mutate(average_composite_score = as.numeric(as.character(average_composite_score)))
+
+TN_ACT_demos <- TN_joined %>% 
+  ggplot(aes(average_composite_score, white_pct)) + geom_point() +
+  geom_smooth(method = lm)
+
+TN_ACT_demos
+
+TN_ACT_expenditures <- TN_joined %>% 
+  mutate(per_pupil_expenditures_per_ada =
+           as.numeric(as.character(per_pupil_expenditures_per_ada))) %>% 
+  ggplot(aes(average_composite_score, per_pupil_expenditures_per_ada)) +
+  geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  ylim(7500,13500)
+
+TN_ACT_expenditures
+
+TN_demos_expenditures <- TN_joined %>% 
+  mutate(per_pupil_expenditures_per_ada =
+           as.numeric(as.character(per_pupil_expenditures_per_ada))) %>% 
+  ggplot(aes(white_pct, per_pupil_expenditures_per_ada)) +
+  geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  ylim(7500,13500)
+
+TN_demos_expenditures
 ```
 
 ```{r Texas}
@@ -755,6 +836,28 @@ TX_outcomes <- TX_ACT %>%
 
 TX_joined <- TX_outcomes %>% 
   full_join(TX_financial, by = c("district" = "cdn"))
+
+TX_ACT_financial <- TX_joined %>% 
+  mutate(compos = as.numeric(as.character(compos)),
+         all_funds_operating_expenditures_per_student_38 = 
+           as.numeric(as.character(all_funds_operating_expenditures_per_student_38))) %>% 
+  ggplot(aes(compos, all_funds_operating_expenditures_per_student_38)) +
+  geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  ylim(5000,32500)
+
+TX_ACT_financial
+
+TX_SAT_financial <- TX_joined %>% 
+  mutate(total = as.numeric(as.character(total)),
+         all_funds_operating_expenditures_per_student_38 = 
+           as.numeric(as.character(all_funds_operating_expenditures_per_student_38))) %>% 
+  ggplot(aes(total, all_funds_operating_expenditures_per_student_38, 
+             color = region_sat)) +
+  geom_point(position = 'dodge', alpha = 0.01) + geom_smooth(method = 'lm') +
+  ylim(5000,32500) +
+  theme(legend.position = "none")
+
+TX_SAT_financial
 ```
 
 ```{r Wisconsin}
@@ -766,6 +869,21 @@ WI_financial <- read_csv("States/Wisconsin/2017-2018-12-Budget-Data-AtoZ-with-Ro
 
 WI_joined <- WI_ACT %>% 
   full_join(WI_financial, by = "district_name")
+
+WI_ACT_financial <- WI_joined %>% 
+  mutate(amount = as.numeric(as.character(amount)),
+         district_nmbr = as.numeric(as.character(district_nmbr))) %>% 
+  select(-coa_act) %>% 
+  group_by(school) %>% 
+  sample_n(size = 1)
+
+WI_ACT_financial <- WI_ACT_financial %>% 
+  filter(amount < 1000000) %>% 
+  filter(!amount == "0") %>% 
+ggplot(aes(composite, amount)) + geom_point() +
+  geom_smooth(method = lm, color = 'dark red')
+
+WI_ACT_financial
 ```
 
 ```{r Wyoming}
