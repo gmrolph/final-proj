@@ -33,12 +33,17 @@ AR_ACT <- read_excel("States/Arkansas/G11ACT_Summary_2019.xlsx") %>% clean_names
 
 ```{r California}
 CA_SAT <- read_excel("States/California/sat19.xls") %>% clean_names()
-CA_ACT <- read_excel("States/California/act19.xls") %>% clean_names()
+CA_ACT <- read_excel("States/California/act19.xls") %>% clean_names() 
 CA_financial <- read_excel("States/California/j90summary1819.xlsx", skip = 167) %>% 
   select(2,6) %>% 
   rename(district = ...2,
          average_salary = ...6) %>% 
-  na.omit() 
+  na.omit() %>% 
+  mutate(average_salary = str_replace(average_salary, "N/A", NA_character_),
+         average_salary = 
+           as.numeric(as.character(str_replace(average_salary, "Average", NA_character_)))) %>% 
+  na.omit() %>% 
+  mutate(average_CA_salary = mean(average_salary))
 
 CA_joined <- CA_SAT %>% 
   full_join(CA_financial, by = c("dname" = "district"))
@@ -84,18 +89,23 @@ CO_SAT_and_salary <- CO_SAT_sals %>%
   mutate(total_score_mean_score = as.numeric(as.character(total_score_mean_score)),
          average_sal = as.numeric(as.character(average_sal)))
 
-CO_SAT_and_salary %>%
+CO_SAT_salary_image <- CO_SAT_and_salary %>%
   group_by(school_name) %>% 
   filter(test == "SAT") %>% 
   arrange(desc(total_score_mean_score)) %>% 
   ggplot(aes(total_score_mean_score, average_sal)) + geom_point(position = 'dodge') + 
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  geom_smooth() +
+  geom_smooth(method = lm, se = F) +
   labs(title = "Correlation of Colorado's SAT Scores to Teacher Salaries",
        subtitle = "Where Score is Average Total SAT Score and Salary is Average Teacher Salary",
        y = "Salary", 
        x = "Score")
+
+CO_SAT_salary_image
+
+CO_SAT_salary_image %>% 
+  ggsave(filename = file.path("final-proj-shiny", "colorado_sat_salary.png"))
 ```
 
 ```{r Colorado Top 20 Math Scores}
@@ -123,14 +133,19 @@ CO_gendered_outcomes %>%
 ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
 ```
 
-```{r Connecticut, message = FALSE, cache = TRUE}
+```{r Connecticut, cache = TRUE}
 CN_expenditures <- read_excel("States/Connecticut/CN_financial.xlsx", skip = 1) %>% 
   clean_names()
 
 CN_expenditures <- CN_expenditures[ ,-c(3:6)] %>% 
   na.locf(., fromLast = TRUE) %>% 
   filter(type == "Total Expenditures") %>% 
-  rename(amount = "x2016_17")
+  rename(amount = "x2016_17") %>% 
+  mutate(CN_avg = mean(as.numeric(as.character(amount))))
+
+CN_avg_expenditure <- CN_expenditures %>% 
+  select(CN_avg) %>% 
+  head(1) 
 
 CN_teacher_demos <- read_excel("States/Connecticut/CN teacher demos.xlsx", skip = 1) %>% clean_names() %>% 
   na.locf(., fromLast = TRUE)
@@ -145,7 +160,12 @@ CN_SAT <-  data.frame(lapply(CN_SAT, function(x) {
                 gsub('\\*', NA_character_, x)
              })) %>% 
   na.locf(., fromLast = TRUE) %>% 
-  group_by(district) 
+  mutate(CN_SAT_avg = mean(as.numeric(as.character(average_score_14))))
+
+CN_avg_SAT <- CN_SAT %>% 
+  select(CN_SAT_avg) %>% 
+  mutate(CN_SAT_avg = as.numeric(CN_SAT_avg)) %>% 
+  head(1)
 
 CN_SAT_ELA <- CN_SAT %>% 
   filter(subject == "ELA")
@@ -163,7 +183,7 @@ CN_join3 <- CN_SAT %>%
   full_join(CN_teacher_demos, by = "district") 
 
 
-CN_join1 %>% 
+CN_expenditures_elascore <- CN_join1 %>% 
   ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
   theme_classic() + geom_smooth(method = 'lm') +
   labs(title = "Correlation of Connecticut's Expenditures to Score",
@@ -171,7 +191,12 @@ CN_join1 %>%
        y = "Amount",
        x = "Score")
 
-CN_join2 %>% 
+CN_expenditures_elascore
+
+CN_expenditures_elascore %>% 
+    ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_ela_expenditure.png"))
+
+CN_expenditures_mathscore <- CN_join2 %>% 
   ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
   theme_classic() + geom_smooth(method = 'lm') +
   labs(title = "Correlation of Connecticut's Expenditures to Score",
@@ -179,7 +204,12 @@ CN_join2 %>%
        y = "Amount",
        x = "Score")
 
-CN_join3 %>% 
+CN_expenditures_mathscore
+
+CN_expenditures_mathscore %>% 
+      ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_math_expenditure.png"))
+
+CN_sat_staffdemos <- CN_join3 %>% 
   filter(race == "White") %>% 
   ggplot(aes(as.numeric(as.character(percent_of_total_12)), as.numeric(as.character(average_score_14)))) + 
   geom_point(position = 'dodge') +
@@ -188,6 +218,11 @@ CN_join3 %>%
        subtitle = "Where score is average SAT score and percent is % of white instructors",
        y = "Score",
        x = "Percent")
+
+CN_sat_staffdemos
+
+CN_sat_staffdemos %>% 
+    ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_staffdemos.png"))
 ```
 
 ```{r Florida}
@@ -204,7 +239,11 @@ FL_ACT <- data.frame(lapply(FL_ACT, function(x) {
              }))
 
 FL_ACT <- FL_ACT %>% 
-  mutate(average = mean(composite)) 
+  mutate(average = mean(as.numeric(as.character(composite))))
+
+FL_avg_act <- FL_ACT %>% 
+  select(average) %>% 
+  head(1)
 
 FL_teachersalaries <- read_excel("States/Florida/1819TeacherSalaryData.xlsx", skip = 2) %>% 
   clean_names()
@@ -232,6 +271,9 @@ florida_teachers <- FL_joined %>%
 
 florida_teachers
 
+florida_teachers %>% 
+    ggsave(filename = file.path("final-proj-shiny", "florida_teachers.png"))
+
 florida_superintendents <- FL_joined %>% 
   arrange(desc(composite)) %>% 
   ggplot(aes(x = (as.numeric(as.character(composite))), y = (as.numeric(as.character(superintendent))))) + 
@@ -244,6 +286,9 @@ florida_superintendents <- FL_joined %>%
 
 florida_superintendents
 
+florida_superintendents %>% 
+    ggsave(filename = file.path("final-proj-shiny", "florida_superintendents.png"))
+
 florida_school_board <- FL_joined %>% 
   arrange(desc(composite)) %>% 
   ggplot(aes(x = (as.numeric(as.character(composite))), y = (as.numeric(as.character(school_board_member))))) + 
@@ -255,6 +300,9 @@ florida_school_board <- FL_joined %>%
        x = "Score")
 
 florida_school_board
+
+florida_school_board %>% 
+    ggsave(filename = file.path("final-proj-shiny", "florida_school_board.png"))
 ```
 
 ```{r Georgia, include = FALSE, warning = FALSE}
@@ -271,8 +319,6 @@ GA_SAT <- data.frame(lapply(GA_SAT, function(x) {
 GA_SAT <- na.omit(GA_SAT) %>% 
   mutate(avg_math = mean(math)) %>% 
   filter(school_name == (str_replace(school_name, "HS", "High School"))) 
-
-
   
 
 GA_ACT <- read_excel("States/Georgia/ACT Scores School 2019.xlsx",
@@ -318,22 +364,40 @@ GA_outcomes <- GA_SAT %>%
 
 ```
 
-```{r Indiana}
+```{r Indiana, include = F}
 IN_SAT <- read_excel("States/Indiana/sat-corporation-and-school.xlsx",
                      col_types = c("text", "numeric", "text", "numeric", "numeric",
                                    "numeric", "numeric", "numeric", "numeric", "numeric")) %>% clean_names() %>% 
   mutate(percent_graduates_taking_sat = (percent_graduates_taking_sat*100)) %>% 
-  filter(year == "2017-18")
+  filter(year == "2017-18") %>% 
+  mutate(avg_composite_math_and_verbal =     
+           as.numeric(avg_composite_math_and_verbal),
+         avg_sat = mean(avg_composite_math_and_verbal)) %>% 
+  filter(is.na(avg_composite_math_and_verbal))
+  
+IN_avg_sat <- IN_SAT %>% 
+  select(avg_sat) %>% 
+  head(1)
 
 IN_ACT <- read_excel("States/Indiana/act-corporation-and-school.xlsx", 
                      col_types = c("text", "numeric", "text", "numeric", "numeric",
                                    "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% clean_names() %>% 
   mutate(percent_graduates_taking_act = (percent_graduates_taking_act*100)) %>% 
-  filter(year == "2017-18")
+  filter(year == "2017-18") %>% 
+  mutate(IN_avg_comp = mean(as.numeric(avg_composite_score))) 
+
+IN_avg_act <- IN_ACT %>% 
+  select(IN_avg_comp) %>% 
+  head(1)
 
 IN_financial <- read_excel("States/Indiana/fy2019-school-level-financial-data-media.xlsx") %>% 
   clean_names() %>% 
-  filter(str_detect(school_type, "High School")) 
+  filter(str_detect(school_type, "High School")) %>% 
+  mutate(avg_spending = mean(as.numeric(as.character(instructional_per_student))))
+
+IN_avg_expenditure <- IN_financial %>% 
+  select(avg_spending) %>% 
+  head(1)
 
 IN_join1 <- IN_SAT %>% 
  full_join(IN_ACT, by = c("corp_id" = "corp_no"), suffix = c("_sat", "_act")) %>% 
@@ -343,7 +407,7 @@ IN_join1 <- IN_SAT %>%
 IN_joined <- IN_join1 %>% 
   full_join(IN_financial, by = c("corp_name_sat" = "corporation_name"))
 
-IN_joined %>% 
+IN_sat_spending <- IN_joined %>% 
   filter(avg_composite_math_and_verbal > 400) %>% 
   filter(instructional_per_student < 90000) %>% 
   ggplot(aes(avg_composite_math_and_verbal, instructional_per_student)) +
@@ -354,7 +418,12 @@ Amount is instructional spending per student",
        y = "Amount", 
        x = "Score")
 
-IN_joined %>% 
+IN_sat_spending
+
+IN_sat_spending %>% 
+    ggsave(filename = file.path("final-proj-shiny", "indiana_sat_spending.png"))
+
+IN_act_spending <- IN_joined %>% 
   filter(instructional_per_student < 90000) %>% 
   ggplot(aes(avg_composite_score, instructional_per_student)) +
   geom_point() + geom_smooth(method = lm, color = 'dark grey', se = F) + theme_classic() +
@@ -363,9 +432,15 @@ IN_joined %>%
 Amount is instructional spending per student",
        y = "Amount", 
        x = "Score")
+
+IN_act_spending
+
+IN_act_spending %>% 
+    ggsave(filename = file.path("final-proj-shiny", "indiana_act_spending.png"))
+
 ```
 
-```{r Iowa}
+```{r Iowa, include = F}
 IO_salaries <- read_excel("States/Iowa/2019-2020 Iowa Public School Full Time Teachers_1.xlsx", skip = 13) %>% clean_names() %>%
   select(-x6, -x10, -x13, -x15, -x19, -x23, -x26, -x28, -x31, -x41, -x51) %>% 
   mutate(district_name = to_snake_case(district_name))
@@ -379,17 +454,20 @@ IO_ACT <- read_excel("States/Iowa/Iowa_2019_Public_Schools_Graduating_Class_5yr_
 IO_ACT_sals <- IO_salaries %>% 
   full_join(IO_ACT, by = "district_name") 
 
-IO_ACT_demos <- IO_demos %>% 
+IO_ACT_demos <- IO_ACT %>% 
   full_join(IO_demos, by = "district_name")
 
-IO_ACT_graph <- IO_ACT_sals %>% 
+IO_ACT_sals <- IO_ACT_sals %>% 
   mutate(ft_teacher_teacher_leader_average_total_salary = 
            as.numeric(as.character(ft_teacher_teacher_leader_maximum_total_salary)),
-         avg_comp = as.numeric(as.character(avg_comp))) %>% 
+         avg_comp = as.numeric(as.character(avg_comp))) 
+
+IO_ACT_graph <- IO_ACT_sals %>% 
   ggplot(aes(avg_comp, ft_teacher_teacher_leader_average_total_salary)) +
-  geom_point() + theme_classic()
+  geom_point() 
 
 IO_ACT_graph
+
 ```
 
 ```{r Kentucky}
@@ -433,13 +511,28 @@ KY_join3 <- KY_join2 %>%
 KY_join4 <- KY_join3 %>% 
   right_join(KY_learning_envir, by = "dist_number")
 
-KY_join1 %>% 
+KY_ACT_expenditure <- KY_join1 %>% 
   ggplot(aes(composite_mean_score, x2018_19)) + geom_point() + 
-  geom_smooth(method = lm, color = "dark red")
+  geom_smooth(method = lm, color = "dark red") +
+  labs(title = "Kentucky's Correlation of ACT Score to Expenditures",
+       subtitle = "Where Score is average ACT score and Amount is district expenditures",
+       y = "Amount",
+       x = "Score") + theme_classic()
 
-KY_join2 %>% 
+KY_ACT_expenditure
+
+KY_ACT_expenditure %>% 
+    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-expenditure.png"))
+
+KY_ACT_total_spending <- KY_join2 %>% 
   ggplot(aes(composite_mean_score, `2019-2020`)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Kentucky's ACT score to total expenditures",
+       subtitle = "Where Amount is total district expenditures and Score is average ACT score",
+       y = "Amount",
+       x = "Score")
+
+KY_ACT_total_spending
 
 KY_ACT_teacher_filtered <- KY_ACT_finance %>% 
   filter(finance_label == "Average Teacher Salary") %>% 
@@ -449,17 +542,34 @@ KY_ACT_teacher <- KY_ACT_teacher_filtered %>%
   mutate(finance_value = 
            as.numeric(gsub("[\\$,]", "", KY_ACT_teacher_filtered$finance_value))) %>% 
   ggplot(aes(composite_mean_score, finance_value)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Kentucky's expenditures to ACT score",
+       subtitle = "Where Score is average ACT score by district
+and Amount is average expenditure by district",
+    y = "Amount",
+    x = "Score")
 
 KY_ACT_teacher
+
+KY_ACT_teacher %>% 
+    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-teacher.png"))
 
 KY_ACT_principal <- KY_ACT_finance %>% 
   mutate(finance_value = as.numeric(gsub(",", "", finance_value))) %>% 
   filter(finance_label == "Average Principal Salary") %>% 
   ggplot(aes(composite_mean_score, finance_value)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Kentucky's ACT scores to financial value",
+       subtitle = "Where Score is average ACT score and Amount is financial investment",
+       y = "Amount", 
+       x = "Score")
 
 KY_ACT_principal
+
+KY_ACT_principal %>% 
+    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-principal.png"))
 ```
 
 ```{r Louisiana}
@@ -477,7 +587,12 @@ LA_joined <- LA_ACT %>%
 
 LA_ACT_teacher <- LA_joined %>% 
   ggplot(aes(average_composite_score, avg_classroom_teachers_salary_without_extra_compensation_7)) +
-  geom_point() + geom_smooth(method = lm)
+  geom_point() + geom_smooth(method = lm) +
+  theme_classic() +
+  labs(title = "Correlation of Louisiana's ACT score to teacher salary",
+       subtitle = "Where Score is average ACT score and Amount is average teacher salary",
+       y = "Amount",
+       x = "Score")
 
 LA_ACT_teacher
 ```
@@ -535,31 +650,63 @@ MA_SAT_PPE_math <- MA_join1 %>%
   mutate(total_expenditures_per_pupil = 
            as.numeric(gsub("[\\$,]", "", MA_join1$total_expenditures_per_pupil))) %>% 
   ggplot(aes(math, total_expenditures_per_pupil)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Massachusetts' expenditures per pupil to SAT score",
+       subtitle = "Where Amount is per pupil expenditure and Score is average SAT score",
+       y = "Amount",
+       x = "Score")
 
 MA_SAT_PPE_math
+
+MA_SAT_PPE_math %>% 
+    ggsave(filename = file.path("final-proj-shiny", "mass-sat-ppe-math.png"))
 
 MA_SAT_PPE_reading <- MA_join1 %>% 
   mutate(total_expenditures_per_pupil = 
            as.numeric(gsub("[\\$,]", "", MA_join1$total_expenditures_per_pupil))) %>% 
   ggplot(aes(reading_writing, total_expenditures_per_pupil)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Massachusetts' expenditures per pupil to SAT score",
+       subtitle = "Where Amount is per pupil expenditures and Score is average SAT reading score",
+       y = "Amount",
+       x = "Score")
 
 MA_SAT_PPE_reading
+
+MA_SAT_PPE_reading %>% 
+    ggsave(filename = file.path("final-proj-shiny", "mass-sat-ppe-reading.png"))
 
 MA_SAT_demos_reading <- MA_join2 %>% 
   filter(percent_white > 35) %>% 
   ggplot(aes(percent_white, reading_writing)) + geom_point() + 
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Massachusetts' demographics to reading SAT scores",
+       subtitle = "Where Score is average SAT reading score and Percent is percent of white students",
+       x = "Percent",
+       y = "Score")
 
 MA_SAT_demos_reading
+
+MA_SAT_demos_reading %>%     
+  ggsave(filename = file.path("final-proj-shiny", "mass-sat-demos-reading.png"))
+
 
 MA_SAT_demos_math <- MA_join2 %>% 
   filter(percent_white > 35) %>% 
   ggplot(aes(percent_white, math)) + geom_point() + 
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Massachusetts' demographics to math SAT scores",
+       subtitle = "Where Score is average SAT math score and Percent is percent of white students",
+       x = "Percent",
+       y = "Score")
 
 MA_SAT_demos_math
+
+MA_SAT_demos_math %>%     
+  ggsave(filename = file.path("final-proj-shiny", "mass-sat-demos-math.png"))
+
 
 MA_SAT_sals <- MA_SAT_18_19 %>% 
   select(-writing) %>% 
@@ -570,15 +717,30 @@ MA_SAT_sals <- MA_SAT_18_19 %>%
 
 MA_SAT_sals_reading <- MA_SAT_sals %>% 
   ggplot(aes(reading_writing, average_salary)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Massachusetts' teacher salaries to SAT reading score",
+       subtitle = "Where Amount is average teacher salary and Score is SAT reading score",
+       y = "Amount",
+       x = "Score")
   
 MA_SAT_sals_reading
 
+MA_SAT_sals_reading %>% 
+    ggsave(filename = file.path("final-proj-shiny", "mass-sat-sals-reading.png"))
+
 MA_SAT_sals_math <- MA_SAT_sals %>% 
   ggplot(aes(math, average_salary)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Massachusetts' teacher salaries to SAT math score",
+       subtitle = "Where Amount is average teacher salary and Score is SAT math score",
+       y = "Amount",
+       x = "Score")
+  
 
 MA_SAT_sals_math
+
+MA_SAT_sals_math %>% 
+    ggsave(filename = file.path("final-proj-shiny", "mass-sat-sals-math.png"))
 ```
 
 ```{r Nevada}
@@ -599,15 +761,35 @@ NV_joined <- NV_join1 %>%
 
 NV_demo_outcomes <- NV_joined %>% 
   ggplot(aes(white_percent, reading_percent_meets_standard)) +
-  geom_point() + geom_smooth(method = lm)
+  geom_point() + geom_smooth(method = lm) +
+  theme_classic() + 
+  labs(title = "Correlation of Nevada's demographics to percent of students 
+meeting reading standards",
+       subtitle = "Where Benchmark is percent meeting reading standard and Percent is percent of white students",
+       y = "Benchmark",
+       x = "Percent")
 
 NV_demo_outcomes
 
+NV_demo_outcomes %>%     
+  ggsave(filename = file.path("final-proj-shiny", "nv-demo-outcomes.png"))
+
+
 NV_financial_outcomes <- NV_joined %>% 
   ggplot(aes(instruction_percent, reading_percent_meets_standard)) +
-  geom_point() + geom_smooth(method = lm)
+  geom_point() + geom_smooth(method = lm) +
+  theme_classic() +
+  labs(title = "Correlation of Nevada's instruction percent to students 
+meeting reading benchmark",
+       subtitle = "Where Benchmark is percent meeting reading standard 
+and Percent is percent of instruction spending",
+       y = "Benchmark",
+       x = "Percent")
 
 NV_financial_outcomes
+
+NV_financial_outcomes %>% 
+    ggsave(filename = file.path("final-proj-shiny", "nv-financial-outcomes.png"))
 ```
 
 ```{r Oklahoma}
@@ -643,9 +825,19 @@ OK_ACT_staff <- OK_ACT %>%
            subject_desc == "SOCIAL STUDIES" | subject_desc == "MUSIC") %>% 
   mutate(composite = as.numeric(as.character(composite)))
 
-OK_ACT_staff %>% 
+OK_ACT_staff_graph <- OK_ACT_staff %>% 
   ggplot(aes(composite, base_salary, color = subject_desc)) + geom_point() +
-  geom_smooth(method = lm, se = F)
+  geom_smooth(method = lm, se = F) +
+  theme_classic() +
+  labs(title = "Correlation of Oklahoma's teacher salaries and ACT score",
+       subtitle = "Where Amount is average teacher salary and Score is average ACT score",
+       y = "Amount", 
+       x = "Score")
+
+OK_ACT_staff_graph
+
+OK_ACT_staff_graph %>% 
+    ggsave(filename = file.path("final-proj-shiny", "ok-act-staff.png"))
 
 OK_ACT_teachers <- OK_ACT %>% 
   full_join(OK_teachers, by = "county_name")
@@ -655,9 +847,16 @@ OK_ACT_supt <- OK_ACT %>%
   filter(!school_name == "DISTRICT WIDE SERVICES") %>% 
   mutate(composite = as.numeric(as.character(composite))) %>% 
   ggplot(aes(composite, base_salary)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') + theme_classic() +
+  labs(title = "Correlation of Oklahoma's superintendent salaries to ACT score",
+       subtitle = "Where Amount is average superintendent salary and Score is average ACT score",
+       y = "Amount",
+       x = "Score")
 
 OK_ACT_supt
+
+OK_ACT_supt %>% 
+    ggsave(filename = file.path("final-proj-shiny", "ok-act-supt.png"))
 ```
 
 ```{r Pennsylvania}
@@ -680,7 +879,12 @@ PA_joined <- PA_outcomes %>%
 
 PA_ACT_grad <- PA_joined %>% 
   ggplot(aes(composite_score_average, cohort_grad_rate)) + geom_point() +
-  geom_smooth(method = 'lm')
+  geom_smooth(method = 'lm') + theme_classic() +
+  labs(title = "Correlation of Pennsylvania's ACT score to graduation rate",
+       subtitle = "Where Score is average ACT score and Percent is percent of graduation",
+       y = "Percent",
+       x = "Score") +
+  ylim(0, 100)
 
 PA_ACT_grad
 ```
@@ -723,27 +927,45 @@ SC_joined <- SC_joined %>%
 SC_SAT_financial <- SC_joined %>% 
   na.omit() %>% 
   ggplot(aes(total_score, amount)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of South Carolina's SAT score to school district expenditures",
+       subtitle = "Where Amount is school's expenditures and Score is SAT score",
+       y = "Amount",
+       x = "Score")
 
 SC_SAT_financial
 
 SC_ACT_financial <- SC_joined %>% 
   na.omit() %>% 
   ggplot(aes(mean_composite_score, amount)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of South Carolina's ACT score to school district expenditures",
+       subtitle = "Where Amount is school's expenditures and Score is ACT score",
+       y = "Amount",
+       x = "Score")
 
 SC_ACT_financial
 
 SC_SAT_demos <- SC_joined %>% 
   ggplot(aes(total_score, percent_white)) + geom_point() +
-  geom_smooth(method = lm) + 
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of South Carolina's SAT score to percent of white students",
+       subtitle = "Where Score is average SAT score and Percent is percent of the student
+body that is white",
+    y = "Percent",
+    x = "Score") +
   ylim(25,100)
 
 SC_SAT_demos
 
 SC_ACT_demos <- SC_joined %>% 
   ggplot(aes(mean_composite_score, percent_white)) + geom_point() +
-  geom_smooth(method = lm) +
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of South Carolina's ACT score to percent of white students",
+       subtitle = "Where Score is average ACT score and Percent is percent of the student
+body that is white",
+    y = "Percent",
+    x = "Score") +
   ylim(25,100)
  
 SC_ACT_demos
@@ -775,7 +997,12 @@ SD_joined %>%
 
 SD_ACT_stsr <- SD_joined %>% 
   ggplot(aes(act_composite_score, student_to_staff_ratio)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) +
+  theme_classic() +
+  labs(title = "Correlation of South Dakota's ACT score to ratio",
+       subtitle = "Where Ratio is ratio of students to staff and Score is average ACT score",
+       y = "Ratio",
+       x = "Score")
 
 SD_ACT_stsr
 ```
@@ -793,7 +1020,13 @@ TN_joined <- TN_ACT %>%
 
 TN_ACT_demos <- TN_joined %>% 
   ggplot(aes(average_composite_score, white_pct)) + geom_point() +
-  geom_smooth(method = lm)
+  geom_smooth(method = lm) + theme_classic() +
+  labs(title = "Correlation of Tennessee's ACT scores to percent of white students",
+       subtitle = "Where Score is average ACT score and Percent is percent of the student
+body that is white",
+    y = "Percent",
+    x = "Score") +
+  ylim(0,100)
 
 TN_ACT_demos
 
@@ -802,6 +1035,11 @@ TN_ACT_expenditures <- TN_joined %>%
            as.numeric(as.character(per_pupil_expenditures_per_ada))) %>% 
   ggplot(aes(average_composite_score, per_pupil_expenditures_per_ada)) +
   geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Tennessee's ACT scores to expenditures",
+       subtitle = "Where Score is average ACT score and Amount is expenditures",
+       y = "Amount",
+       x = "Score") +
   ylim(7500,13500)
 
 TN_ACT_expenditures
@@ -811,6 +1049,12 @@ TN_demos_expenditures <- TN_joined %>%
            as.numeric(as.character(per_pupil_expenditures_per_ada))) %>% 
   ggplot(aes(white_pct, per_pupil_expenditures_per_ada)) +
   geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Tennessee's demographics to expenditures",
+       subtitle = "Where Amount is district per pupil expenditures and Percent is percent
+of the student body that is white",
+      y = "Amount",
+      x = "Percent") +
   ylim(7500,13500)
 
 TN_demos_expenditures
@@ -843,6 +1087,11 @@ TX_ACT_financial <- TX_joined %>%
            as.numeric(as.character(all_funds_operating_expenditures_per_student_38))) %>% 
   ggplot(aes(compos, all_funds_operating_expenditures_per_student_38)) +
   geom_point() + geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() + 
+  labs(title = "Correlation of Texas' ACT scores to district expenditures",
+       subtitle = "Where Score is average ACT score and Amount is average district expenditures",
+       y = "Amount",
+       x = "Score") +
   ylim(5000,32500)
 
 TX_ACT_financial
@@ -854,6 +1103,10 @@ TX_SAT_financial <- TX_joined %>%
   ggplot(aes(total, all_funds_operating_expenditures_per_student_38, 
              color = region_sat)) +
   geom_point(position = 'dodge', alpha = 0.01) + geom_smooth(method = 'lm') +
+  labs(title = "Correlation of Texas' SAT scores to expenditures",
+       subtitle = "Where Score is average SAT scores and Amount is district expenditures",
+       y = "Amount",
+       x = "Score") +
   ylim(5000,32500) +
   theme(legend.position = "none")
 
@@ -881,7 +1134,12 @@ WI_ACT_financial <- WI_ACT_financial %>%
   filter(amount < 1000000) %>% 
   filter(!amount == "0") %>% 
 ggplot(aes(composite, amount)) + geom_point() +
-  geom_smooth(method = lm, color = 'dark red')
+  geom_smooth(method = lm, color = 'dark red') +
+  theme_classic() +
+  labs(title = "Correlation of Wisconsin's ACT score to expenditures",
+       subtitle = "Where Score is average ACT score and Amount is expenditures by district",
+       y = "Amount",
+       x = "Score")
 
 WI_ACT_financial
 ```
@@ -896,6 +1154,46 @@ WY_ACT <- read_excel("States/Wyoming/WY ACT.xlsx", skip = 1) %>% clean_names()
 WY_joined <- WY_ACT %>% 
   full_join(WY_staff_salaries, by = "district_name") %>% 
   na.omit(WY_joined)
+```
+
+```{r averages, include = F}
+act_averages <- c(FL_avg_act, IN_avg_act)
+sat_averages <- c(CN_avg_SAT, IN_avg_sat)
+teacher_sals_averages <- c(1,2,3)
+expenditure_averages <- c(CN_avg_expenditure, IN_avg_expenditure)
+states <- c("Connecticut", "Indiana") 
+
+fake_expenditures <- c(30000, 45000, 28000, 35000, 37000,
+                       27000, 40000, 41000, 32000, 33500)
+fake_sat <- c(1030, 904, 805, 934, 852, 1032, 963, 854, 702, 989)
+fake_act <- c(23, 28, 30, 26, 28, 31, 24, 25.5, 28.3, 30.1)
+fake_state <- c("Indiana", "Connecticut", "Georgia",
+                "South Dakota", "Idaho", "Nevada",
+                "Maine", "Rhode Island", "New York", "Florida")
+
+fake_state_tibble <- tibble(fake_state, fake_sat, fake_act, fake_expenditures)
+
+states_averages <- tibble(states, expenditure_averages, sat_averages)
+
+states_averages %>% 
+  mutate(sat_averages = as.numeric(as.character(sat_averages)),
+         states = as.character(states),
+         expenditure_averages = as.numeric(as.character(expenditure_averages)))
+
+fake_states_groupings <- fake_state_tibble %>% 
+  rename(State = fake_state) %>% 
+  ggplot(aes(fake_act, fake_expenditures, color = State)) + geom_point() +
+  geom_smooth(method = lm, se = F, color = 'dark red') + theme_classic() +
+  labs(title = "Correlation of America's average ACT score to average expenditures",
+       subtitle = "Where Amount is average school expenditures by state and
+Score is average ACT score by state",
+      y = "Amount",
+      x = "Score") +
+  theme(legend.position = "right")
+
+fake_states_groupings %>% 
+    ggsave(filename = file.path("final-proj-shiny", "fake-correlations.png"))
+
 ```
 
 URL for my Shiny app: https://garrett-rolph.shinyapps.io/final-proj-shiny/
