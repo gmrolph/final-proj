@@ -1103,6 +1103,7 @@ TX_SAT_financial <- TX_joined %>%
   ggplot(aes(total, all_funds_operating_expenditures_per_student_38, 
              color = region_sat)) +
   geom_point(position = 'dodge', alpha = 0.01) + geom_smooth(method = 'lm') +
+  theme_classic() +
   labs(title = "Correlation of Texas' SAT scores to expenditures",
        subtitle = "Where Score is average SAT scores and Amount is district expenditures",
        y = "Amount",
