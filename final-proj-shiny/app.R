@@ -1,6 +1,8 @@
 library(shiny)
 library(shinythemes)
 library(tidyverse)
+library(shinydashboard)
+
 
 ui <- fluidPage(
     theme = shinytheme("lumen"),
@@ -56,32 +58,56 @@ ui <- fluidPage(
                comment addressing the dilemma and offering one possible course of 
                action for the new Secretary. If you are interested in reading the
                case study and the accompanying analytic comment, the paper can be 
-               accessed at ________"))),
+               accessed at ________")))
         ),
-    
-    tabPanel("Outcome by State",
-        sidebarLayout(
-            sidebarPanel(
-                selectInput("selectstate", "Choose a state",
-                    choices = list("California", "Colorado", "Connecticut",
-                                   "Florida", "Georgia", "Indiana",
-                                   "Iowa", "Kentucky", "Louisiana",
-                                   "Massachusetts", "Nevada", "Oklahoma",
-                                   "Pennsylvania", "South Carolina", "South Dakota",
-                                   "Tennessee", "Texas", "Wisconsin", "Wyoming"))),
-                
-            mainPanel(
-                imageOutput("state"),
-                width = 8)
-    )),
-    tabPanel("Correlation by Demographic",
-        sidebarLayout(
-            sidebarPanel(
-                numericInput("obs", "Observations:", 10,
-                             1, 100)
-            ),
-        mainPanel(width = 8) 
-            )),
+    tabPanel("South",
+             mainPanel(
+                 fixedRow(
+                     column(1, "", offset = 2, imageOutput("fl_superintendent")),
+                     column(1, "", offset = 8, imageOutput("fl_teachers")),
+                 fixedRow(
+                     column(1, "", offset = 2, imageOutput("ky_act_teacher")),
+                     column(1, "", offset = 8, imageOutput("ky_act_principal")),
+                 fixedRow(
+                     column(1, "", offset = 2, imageOutput("ok_act_staff")),
+                     column(1, "", offset = 8, imageOutput("sc_act_financial")),
+                 fixedRow(
+                     column(1, "", offset = 2, imageOutput("tn_act_expenditures")),
+                     column(1, "", offset = 8, imageOutput("tx_act_financial"))
+                 )
+                 )
+                 )
+                 )
+                 )
+    ),
+    tabPanel("Midwest",
+             mainPanel(
+                 fixedRow(
+                     column(1, "Level 1", offset = 2, imageOutput("co_sat_salary")),
+                     column(1, "Level 1", offset = 8, imageOutput("wy_act_salary")),
+                 fixedRow(
+                     column(1, "Level 2", offset = 2, imageOutput("sd_act_stsr")),
+                     column(1, "Level 2", offset = 8, imageOutput("wi_act_financial"))
+                 )
+                 )
+                     )
+             ),
+    tabPanel("Northeast",
+             mainPanel(
+                 fixedRow(
+                     column(1, "", imageOutput("conn_engl_doll")),
+                     column(1, "", offset = 8, imageOutput("conn_math_doll"))),
+                 fixedRow(
+                     column(1, "", imageOutput("mass_math_sals")),
+                     column(1, "", offset = 8, imageOutput("mass_reading_ppe"))
+                 )
+             )),
+    tabPanel("West",
+             mainPanel(
+                 fixedRow(
+                     column(1, "", imageOutput("test")),
+                     column(1, "", offset = 8, imageOutput("test2")))
+             )),
     tabPanel("Contact and Information",
              h1(tags$b("Contact and Info"), align = "center"),
              p("Project by Garrett Rolph, Harvard class of 2022.", align = "center"),
@@ -89,36 +115,214 @@ ui <- fluidPage(
              p("Email: garrett_rolph@college.harvard.edu", align = "center"),
              p(tags$a(href = "https://github.com/gmrolph", "GitHub: gmrolph"), align = "center")
     ))
-)
-
+    
+    )
 
 server <- function(input, output) {
-    output$state <- renderImage({
-        case_when(input$selectstate == "California" ~ "ok-act-supt.png",
-                  input$selectstate == "Colorado" ~ "colorado_gender_outcome.png",
-                  input$selectstate == "Connecticut" ~ "connecticut_sat_staffdemos.png",
-                  input$selectstate == "Florida" ~ "florida_school_board.png",
-                  input$selectstate == "Georgia" ~ "florida_superintendents.png",
-                  input$selectstate == "Indiana" ~ "indiana_sat_spending.png",
-                  input$selectstate == "Iowa" ~ "indiana_act_spending.png",
-                  input$selectstate == "Kentucky" ~ "kentucky-act-expenditure.png",
-                  input$selectstate == "Louisiana" ~ "kentucky-act-teacher.png",
-                  input$selectstate == "Massachusetts" ~ "kentucky-act-principal.png",
-                  input$selectstate == "Nevada" ~ "mass-sat-ppe-math.png",
-                  input$selectstate == "Oklahoma" ~ "mass-sat-ppe-reading.png",
-                  input$selectstate == "Pennsylvania" ~ "mass-sat-demos-reading.png",
-                  input$selectstate == "South Carolina" ~ "mass-sat-demos-math.png",
-                  input$selectstate == "South Dakota" ~ "mass-sat-sals-reading.png",
-                  input$selectstate == "Tennessee" ~ "mass-sat-sals-math.png",
-                  input$selectstate == "Texas" ~ "nv-demo-outcomes.png",
-                  input$selectstate == "Wisconsin" ~ "nv-financial-outcomes.png",
-                  input$selectstate == "Wyoming" ~ "ok-act-staff.png")
-        
-        
-        
-        deleteFile = FALSE
-    }
+
+    output$co_sat_salary <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'colorado_sat_salary.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
     )
+    
+    output$conn_engl_doll <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'connecticut_sat_ela_expenditure.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$conn_math_doll <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'connecticut_sat_math_expenditure.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$conn_sat_demos <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'connecticut_sat_staffdemos.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$fl_school_board <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'florida_school_board.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$fl_superintendent <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'florida_superintendents.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$fl_teachers <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'florida_teachers.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+
+    output$in_act_doll <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'indiana_act_spending.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$in_sat_doll <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'indiana_sat_spending.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$ky_act_teacher <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'kentucky-act-teacher.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$ky_act_principal <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'kentucky-act-principal.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$mass_math_demos <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'mass-sat-demos-math.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$mass_math_sals <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'mass-sat-sals-math.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$mass_reading_ppe <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'mass-sat-ppe-reading.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$ok_act_staff <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'ok-act-staff.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$sc_act_financial <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'sc-act-financial.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$sc_act_demos <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'sc-act-demos.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$sd_act_stsr <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'sd-act-stsr.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$test <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'nv-demo-outcomes.png', 
+             height = 400,
+             width = 700,
+             style="display: block; margin-left: auto; margin-right: auto;")
+        
+    }, deleteFile = FALSE
+    )
+    
+    output$test2 <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'nv-financial-outcomes.png', 
+             height = 400,
+             width = 700,
+             style="display: block; margin-left: auto; margin-right: right;")
+    }, deleteFile = FALSE
+    )
+
+    output$tn_act_expenditures <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'tn-act-expenditures.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$tn_act_demos <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'tn-act-demos.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$tx_act_financial <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'tx-act-financial.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$wi_act_financial <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'wi-act-financial.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
+    output$wy_act_salary <- renderImage({
+        # Return a list containing the filename and alt text
+        list(src = 'wy-act-salary.png', 
+             height = 400,
+             width = 700)
+    }, deleteFile = FALSE
+    )
+    
     output$image <- renderImage({
         # Return a list containing the filename and alt text
         list(src = 'coe_hp_new.png', 
@@ -135,4 +339,5 @@ server <- function(input, output) {
     }, deleteFile = FALSE
     )
 }
+
 shinyApp(ui = ui, server = server)

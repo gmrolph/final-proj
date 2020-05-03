@@ -887,6 +887,9 @@ PA_ACT_grad <- PA_joined %>%
   ylim(0, 100)
 
 PA_ACT_grad
+
+PA_ACT_grad %>% 
+   ggsave(filename = file.path("final-proj-shiny", "pa-grad-rate.png"))
 ```
 
 ```{r South Carolina}
@@ -933,7 +936,8 @@ SC_SAT_financial <- SC_joined %>%
        y = "Amount",
        x = "Score")
 
-SC_SAT_financial
+SC_SAT_financial %>% 
+     ggsave(filename = file.path("final-proj-shiny", "sc-sat-financial.png"))
 
 SC_ACT_financial <- SC_joined %>% 
   na.omit() %>% 
@@ -944,7 +948,8 @@ SC_ACT_financial <- SC_joined %>%
        y = "Amount",
        x = "Score")
 
-SC_ACT_financial
+SC_ACT_financial %>% 
+    ggsave(filename = file.path("final-proj-shiny", "sc-act-financial.png"))
 
 SC_SAT_demos <- SC_joined %>% 
   ggplot(aes(total_score, percent_white)) + geom_point() +
@@ -956,7 +961,9 @@ body that is white",
     x = "Score") +
   ylim(25,100)
 
-SC_SAT_demos
+SC_SAT_demos %>% 
+      ggsave(filename = file.path("final-proj-shiny", "sc-sat-demos.png"))
+
 
 SC_ACT_demos <- SC_joined %>% 
   ggplot(aes(mean_composite_score, percent_white)) + geom_point() +
@@ -968,7 +975,9 @@ body that is white",
     x = "Score") +
   ylim(25,100)
  
-SC_ACT_demos
+SC_ACT_demos %>% 
+        ggsave(filename = file.path("final-proj-shiny", "sc-act-demos.png"))
+
 ```
 
 ```{r South Dakota}
@@ -1004,7 +1013,9 @@ SD_ACT_stsr <- SD_joined %>%
        y = "Ratio",
        x = "Score")
 
-SD_ACT_stsr
+SD_ACT_stsr %>% 
+    ggsave(filename = file.path("final-proj-shiny", "sd-act-stsr.png"))
+
 ```
 
 ```{r Tennessee}
@@ -1028,7 +1039,8 @@ body that is white",
     x = "Score") +
   ylim(0,100)
 
-TN_ACT_demos
+TN_ACT_demos %>% 
+      ggsave(filename = file.path("final-proj-shiny", "tn-act-demos.png"))
 
 TN_ACT_expenditures <- TN_joined %>% 
   mutate(per_pupil_expenditures_per_ada =
@@ -1042,7 +1054,9 @@ TN_ACT_expenditures <- TN_joined %>%
        x = "Score") +
   ylim(7500,13500)
 
-TN_ACT_expenditures
+TN_ACT_expenditures %>% 
+        ggsave(filename = file.path("final-proj-shiny", "tn-act-expenditures.png"))
+
 
 TN_demos_expenditures <- TN_joined %>% 
   mutate(per_pupil_expenditures_per_ada =
@@ -1057,7 +1071,9 @@ of the student body that is white",
       x = "Percent") +
   ylim(7500,13500)
 
-TN_demos_expenditures
+TN_demos_expenditures %>% 
+          ggsave(filename = file.path("final-proj-shiny", "tn-demos-expenditures.png"))
+
 ```
 
 ```{r Texas}
@@ -1094,7 +1110,9 @@ TX_ACT_financial <- TX_joined %>%
        x = "Score") +
   ylim(5000,32500)
 
-TX_ACT_financial
+TX_ACT_financial %>% 
+            ggsave(filename = file.path("final-proj-shiny", "tx-act-financial.png"))
+
 
 TX_SAT_financial <- TX_joined %>% 
   mutate(total = as.numeric(as.character(total)),
@@ -1111,7 +1129,9 @@ TX_SAT_financial <- TX_joined %>%
   ylim(5000,32500) +
   theme(legend.position = "none")
 
-TX_SAT_financial
+TX_SAT_financial %>% 
+    ggsave(filename = file.path("final-proj-shiny", "tx-sat-financial.png"))
+
 ```
 
 ```{r Wisconsin}
@@ -1142,7 +1162,9 @@ ggplot(aes(composite, amount)) + geom_point() +
        y = "Amount",
        x = "Score")
 
-WI_ACT_financial
+WI_ACT_financial %>% 
+      ggsave(filename = file.path("final-proj-shiny", "wi-act-financial.png"))
+
 ```
 
 ```{r Wyoming}
@@ -1154,7 +1176,21 @@ WY_ACT <- read_excel("States/Wyoming/WY ACT.xlsx", skip = 1) %>% clean_names()
 
 WY_joined <- WY_ACT %>% 
   full_join(WY_staff_salaries, by = "district_name") %>% 
-  na.omit(WY_joined)
+  na.omit(WY_joined) %>% 
+  filter(group_name == "Teachers Total") %>% 
+  mutate(average_total_salary = str_replace(average_total_salary, "\\$", ""),
+         average_total_salary = as.numeric(str_replace(average_total_salary, ",", "")))
+
+WY_ACT_salary <- WY_joined %>% 
+  ggplot(aes(average_17, average_total_salary)) + geom_point() +
+  theme_classic() + geom_smooth(method = lm) +
+  labs(title = "Correlation of Wyoming's ACT score to Teacher salary",
+       subtitle = "Where Score is average ACT score and Amount is average teacher salary",
+       y = "Amount",
+       x = "Score")
+
+WY_ACT_salary %>% 
+    ggsave(filename = file.path("final-proj-shiny", "wy-act-salary.png"))
 ```
 
 ```{r averages, include = F}
