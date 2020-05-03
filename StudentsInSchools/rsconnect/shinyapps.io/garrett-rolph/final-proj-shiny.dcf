@@ -1,0 +1,12 @@
+name: final-proj-shiny
+title: final-proj-shiny
+username:
+account: garrett-rolph
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2053889
+bundleId: 3095284
+url: https://garrett-rolph.shinyapps.io/final-proj-shiny/
+when: 1588468370.8978
+asMultiple: FALSE
+asStatic: FALSE

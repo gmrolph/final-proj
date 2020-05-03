@@ -105,7 +105,7 @@ CO_SAT_salary_image <- CO_SAT_and_salary %>%
 CO_SAT_salary_image
 
 CO_SAT_salary_image %>% 
-  ggsave(filename = file.path("final-proj-shiny", "colorado_sat_salary.png"))
+  ggsave(filename = file.path("StudentsInSchools", "colorado_sat_salary.png"))
 ```
 
 ```{r Colorado Top 20 Math Scores}
@@ -130,7 +130,7 @@ CO_gendered_outcomes <- CO_SAT_sals %>%
 CO_gendered_outcomes
 
 CO_gendered_outcomes %>% 
-ggsave(filename = file.path("final-proj-shiny", "colorado_gender_outcome.png"))
+ggsave(filename = file.path("StudentsInSchools", "colorado_gender_outcome.png"))
 ```
 
 ```{r Connecticut, cache = TRUE}
@@ -194,7 +194,7 @@ CN_expenditures_elascore <- CN_join1 %>%
 CN_expenditures_elascore
 
 CN_expenditures_elascore %>% 
-    ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_ela_expenditure.png"))
+    ggsave(filename = file.path("StudentsInSchools", "connecticut_sat_ela_expenditure.png"))
 
 CN_expenditures_mathscore <- CN_join2 %>% 
   ggplot(aes(as.numeric(as.character(average_score_14)), as.numeric(as.character(amount)))) + geom_point(position = 'dodge') +
@@ -207,7 +207,7 @@ CN_expenditures_mathscore <- CN_join2 %>%
 CN_expenditures_mathscore
 
 CN_expenditures_mathscore %>% 
-      ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_math_expenditure.png"))
+      ggsave(filename = file.path("StudentsInSchools", "connecticut_sat_math_expenditure.png"))
 
 CN_sat_staffdemos <- CN_join3 %>% 
   filter(race == "White") %>% 
@@ -222,7 +222,7 @@ CN_sat_staffdemos <- CN_join3 %>%
 CN_sat_staffdemos
 
 CN_sat_staffdemos %>% 
-    ggsave(filename = file.path("final-proj-shiny", "connecticut_sat_staffdemos.png"))
+    ggsave(filename = file.path("StudentsInSchools", "connecticut_sat_staffdemos.png"))
 ```
 
 ```{r Florida}
@@ -272,7 +272,7 @@ florida_teachers <- FL_joined %>%
 florida_teachers
 
 florida_teachers %>% 
-    ggsave(filename = file.path("final-proj-shiny", "florida_teachers.png"))
+    ggsave(filename = file.path("StudentsInSchools", "florida_teachers.png"))
 
 florida_superintendents <- FL_joined %>% 
   arrange(desc(composite)) %>% 
@@ -287,7 +287,7 @@ florida_superintendents <- FL_joined %>%
 florida_superintendents
 
 florida_superintendents %>% 
-    ggsave(filename = file.path("final-proj-shiny", "florida_superintendents.png"))
+    ggsave(filename = file.path("StudentsInSchools", "florida_superintendents.png"))
 
 florida_school_board <- FL_joined %>% 
   arrange(desc(composite)) %>% 
@@ -302,7 +302,7 @@ florida_school_board <- FL_joined %>%
 florida_school_board
 
 florida_school_board %>% 
-    ggsave(filename = file.path("final-proj-shiny", "florida_school_board.png"))
+    ggsave(filename = file.path("StudentsInSchools", "florida_school_board.png"))
 ```
 
 ```{r Georgia, include = FALSE, warning = FALSE}
@@ -421,7 +421,7 @@ Amount is instructional spending per student",
 IN_sat_spending
 
 IN_sat_spending %>% 
-    ggsave(filename = file.path("final-proj-shiny", "indiana_sat_spending.png"))
+    ggsave(filename = file.path("StudentsInSchools", "indiana_sat_spending.png"))
 
 IN_act_spending <- IN_joined %>% 
   filter(instructional_per_student < 90000) %>% 
@@ -436,7 +436,7 @@ Amount is instructional spending per student",
 IN_act_spending
 
 IN_act_spending %>% 
-    ggsave(filename = file.path("final-proj-shiny", "indiana_act_spending.png"))
+    ggsave(filename = file.path("StudentsInSchools", "indiana_act_spending.png"))
 
 ```
 
@@ -522,7 +522,7 @@ KY_ACT_expenditure <- KY_join1 %>%
 KY_ACT_expenditure
 
 KY_ACT_expenditure %>% 
-    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-expenditure.png"))
+    ggsave(filename = file.path("StudentsInSchools", "kentucky-act-expenditure.png"))
 
 KY_ACT_total_spending <- KY_join2 %>% 
   ggplot(aes(composite_mean_score, `2019-2020`)) + geom_point() +
@@ -553,7 +553,7 @@ and Amount is average expenditure by district",
 KY_ACT_teacher
 
 KY_ACT_teacher %>% 
-    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-teacher.png"))
+    ggsave(filename = file.path("StudentsInSchools", "kentucky-act-teacher.png"))
 
 KY_ACT_principal <- KY_ACT_finance %>% 
   mutate(finance_value = as.numeric(gsub(",", "", finance_value))) %>% 
@@ -569,7 +569,7 @@ KY_ACT_principal <- KY_ACT_finance %>%
 KY_ACT_principal
 
 KY_ACT_principal %>% 
-    ggsave(filename = file.path("final-proj-shiny", "kentucky-act-principal.png"))
+    ggsave(filename = file.path("StudentsInSchools", "kentucky-act-principal.png"))
 ```
 
 ```{r Louisiana}
@@ -660,7 +660,7 @@ MA_SAT_PPE_math <- MA_join1 %>%
 MA_SAT_PPE_math
 
 MA_SAT_PPE_math %>% 
-    ggsave(filename = file.path("final-proj-shiny", "mass-sat-ppe-math.png"))
+    ggsave(filename = file.path("StudentsInSchools", "mass-sat-ppe-math.png"))
 
 MA_SAT_PPE_reading <- MA_join1 %>% 
   mutate(total_expenditures_per_pupil = 
@@ -676,7 +676,7 @@ MA_SAT_PPE_reading <- MA_join1 %>%
 MA_SAT_PPE_reading
 
 MA_SAT_PPE_reading %>% 
-    ggsave(filename = file.path("final-proj-shiny", "mass-sat-ppe-reading.png"))
+    ggsave(filename = file.path("StudentsInSchools", "mass-sat-ppe-reading.png"))
 
 MA_SAT_demos_reading <- MA_join2 %>% 
   filter(percent_white > 35) %>% 
@@ -690,7 +690,7 @@ MA_SAT_demos_reading <- MA_join2 %>%
 MA_SAT_demos_reading
 
 MA_SAT_demos_reading %>%     
-  ggsave(filename = file.path("final-proj-shiny", "mass-sat-demos-reading.png"))
+  ggsave(filename = file.path("StudentsInSchools", "mass-sat-demos-reading.png"))
 
 
 MA_SAT_demos_math <- MA_join2 %>% 
@@ -705,7 +705,7 @@ MA_SAT_demos_math <- MA_join2 %>%
 MA_SAT_demos_math
 
 MA_SAT_demos_math %>%     
-  ggsave(filename = file.path("final-proj-shiny", "mass-sat-demos-math.png"))
+  ggsave(filename = file.path("StudentsInSchools", "mass-sat-demos-math.png"))
 
 
 MA_SAT_sals <- MA_SAT_18_19 %>% 
@@ -726,7 +726,7 @@ MA_SAT_sals_reading <- MA_SAT_sals %>%
 MA_SAT_sals_reading
 
 MA_SAT_sals_reading %>% 
-    ggsave(filename = file.path("final-proj-shiny", "mass-sat-sals-reading.png"))
+    ggsave(filename = file.path("StudentsInSchools", "mass-sat-sals-reading.png"))
 
 MA_SAT_sals_math <- MA_SAT_sals %>% 
   ggplot(aes(math, average_salary)) + geom_point() +
@@ -740,7 +740,7 @@ MA_SAT_sals_math <- MA_SAT_sals %>%
 MA_SAT_sals_math
 
 MA_SAT_sals_math %>% 
-    ggsave(filename = file.path("final-proj-shiny", "mass-sat-sals-math.png"))
+    ggsave(filename = file.path("StudentsInSchools", "mass-sat-sals-math.png"))
 ```
 
 ```{r Nevada}
@@ -772,7 +772,7 @@ meeting reading standards",
 NV_demo_outcomes
 
 NV_demo_outcomes %>%     
-  ggsave(filename = file.path("final-proj-shiny", "nv-demo-outcomes.png"))
+  ggsave(filename = file.path("StudentsInSchools", "nv-demo-outcomes.png"))
 
 
 NV_financial_outcomes <- NV_joined %>% 
@@ -789,7 +789,7 @@ and Percent is percent of instruction spending",
 NV_financial_outcomes
 
 NV_financial_outcomes %>% 
-    ggsave(filename = file.path("final-proj-shiny", "nv-financial-outcomes.png"))
+    ggsave(filename = file.path("StudentsInSchools", "nv-financial-outcomes.png"))
 ```
 
 ```{r Oklahoma}
@@ -837,7 +837,7 @@ OK_ACT_staff_graph <- OK_ACT_staff %>%
 OK_ACT_staff_graph
 
 OK_ACT_staff_graph %>% 
-    ggsave(filename = file.path("final-proj-shiny", "ok-act-staff.png"))
+    ggsave(filename = file.path("StudentsInSchools", "ok-act-staff.png"))
 
 OK_ACT_teachers <- OK_ACT %>% 
   full_join(OK_teachers, by = "county_name")
@@ -856,7 +856,7 @@ OK_ACT_supt <- OK_ACT %>%
 OK_ACT_supt
 
 OK_ACT_supt %>% 
-    ggsave(filename = file.path("final-proj-shiny", "ok-act-supt.png"))
+    ggsave(filename = file.path("StudentsInSchools", "ok-act-supt.png"))
 ```
 
 ```{r Pennsylvania}
@@ -889,7 +889,7 @@ PA_ACT_grad <- PA_joined %>%
 PA_ACT_grad
 
 PA_ACT_grad %>% 
-   ggsave(filename = file.path("final-proj-shiny", "pa-grad-rate.png"))
+   ggsave(filename = file.path("StudentsInSchools", "pa-grad-rate.png"))
 ```
 
 ```{r South Carolina}
@@ -937,7 +937,7 @@ SC_SAT_financial <- SC_joined %>%
        x = "Score")
 
 SC_SAT_financial %>% 
-     ggsave(filename = file.path("final-proj-shiny", "sc-sat-financial.png"))
+     ggsave(filename = file.path("StudentsInSchools", "sc-sat-financial.png"))
 
 SC_ACT_financial <- SC_joined %>% 
   na.omit() %>% 
@@ -949,7 +949,7 @@ SC_ACT_financial <- SC_joined %>%
        x = "Score")
 
 SC_ACT_financial %>% 
-    ggsave(filename = file.path("final-proj-shiny", "sc-act-financial.png"))
+    ggsave(filename = file.path("StudentsInSchools", "sc-act-financial.png"))
 
 SC_SAT_demos <- SC_joined %>% 
   ggplot(aes(total_score, percent_white)) + geom_point() +
@@ -962,7 +962,7 @@ body that is white",
   ylim(25,100)
 
 SC_SAT_demos %>% 
-      ggsave(filename = file.path("final-proj-shiny", "sc-sat-demos.png"))
+      ggsave(filename = file.path("StudentsInSchools", "sc-sat-demos.png"))
 
 
 SC_ACT_demos <- SC_joined %>% 
@@ -976,7 +976,7 @@ body that is white",
   ylim(25,100)
  
 SC_ACT_demos %>% 
-        ggsave(filename = file.path("final-proj-shiny", "sc-act-demos.png"))
+        ggsave(filename = file.path("StudentsInSchools", "sc-act-demos.png"))
 
 ```
 
@@ -1014,7 +1014,7 @@ SD_ACT_stsr <- SD_joined %>%
        x = "Score")
 
 SD_ACT_stsr %>% 
-    ggsave(filename = file.path("final-proj-shiny", "sd-act-stsr.png"))
+    ggsave(filename = file.path("StudentsInSchools", "sd-act-stsr.png"))
 
 ```
 
@@ -1040,7 +1040,7 @@ body that is white",
   ylim(0,100)
 
 TN_ACT_demos %>% 
-      ggsave(filename = file.path("final-proj-shiny", "tn-act-demos.png"))
+      ggsave(filename = file.path("StudentsInSchools", "tn-act-demos.png"))
 
 TN_ACT_expenditures <- TN_joined %>% 
   mutate(per_pupil_expenditures_per_ada =
@@ -1055,7 +1055,7 @@ TN_ACT_expenditures <- TN_joined %>%
   ylim(7500,13500)
 
 TN_ACT_expenditures %>% 
-        ggsave(filename = file.path("final-proj-shiny", "tn-act-expenditures.png"))
+        ggsave(filename = file.path("StudentsInSchools", "tn-act-expenditures.png"))
 
 
 TN_demos_expenditures <- TN_joined %>% 
@@ -1072,7 +1072,7 @@ of the student body that is white",
   ylim(7500,13500)
 
 TN_demos_expenditures %>% 
-          ggsave(filename = file.path("final-proj-shiny", "tn-demos-expenditures.png"))
+          ggsave(filename = file.path("StudentsInSchools", "tn-demos-expenditures.png"))
 
 ```
 
@@ -1111,7 +1111,7 @@ TX_ACT_financial <- TX_joined %>%
   ylim(5000,32500)
 
 TX_ACT_financial %>% 
-            ggsave(filename = file.path("final-proj-shiny", "tx-act-financial.png"))
+            ggsave(filename = file.path("StudentsInSchools", "tx-act-financial.png"))
 
 
 TX_SAT_financial <- TX_joined %>% 
@@ -1130,7 +1130,7 @@ TX_SAT_financial <- TX_joined %>%
   theme(legend.position = "none")
 
 TX_SAT_financial %>% 
-    ggsave(filename = file.path("final-proj-shiny", "tx-sat-financial.png"))
+    ggsave(filename = file.path("StudentsInSchools", "tx-sat-financial.png"))
 
 ```
 
@@ -1163,7 +1163,7 @@ ggplot(aes(composite, amount)) + geom_point() +
        x = "Score")
 
 WI_ACT_financial %>% 
-      ggsave(filename = file.path("final-proj-shiny", "wi-act-financial.png"))
+      ggsave(filename = file.path("StudentsInSchools", "wi-act-financial.png"))
 
 ```
 
@@ -1190,7 +1190,7 @@ WY_ACT_salary <- WY_joined %>%
        x = "Score")
 
 WY_ACT_salary %>% 
-    ggsave(filename = file.path("final-proj-shiny", "wy-act-salary.png"))
+    ggsave(filename = file.path("StudentsInSchools", "wy-act-salary.png"))
 ```
 
 ```{r averages, include = F}
@@ -1229,7 +1229,7 @@ Score is average ACT score by state",
   theme(legend.position = "right")
 
 fake_states_groupings %>% 
-    ggsave(filename = file.path("final-proj-shiny", "fake-correlations.png"))
+    ggsave(filename = file.path("StudentsInSchools", "fake-correlations.png"))
 
 ```
 
